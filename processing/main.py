@@ -74,6 +74,6 @@ class DataProcessor:
                     except Exception as e:
                         capture_exception(e)
                         logger.error(f"Round processing failed for round {ev}")
-                        raise e
+                        # raise e
 
             time.sleep(self.processing_sleep_cycle)

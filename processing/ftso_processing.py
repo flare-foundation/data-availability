@@ -6,7 +6,7 @@ from sentry_sdk import capture_message
 from configuration.types import ProtocolProvider
 from fsp.models import ProtocolMessageRelayed
 from ftso.models import FeedResult, RandomResult
-from processing.client.ftso_client import FtsoClient
+from processing.client.main import FtsoClient
 from processing.merkle_tree import MerkleTree
 from processing.utils import un_prefix_0x
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def process_single_provider(root: ProtocolMessageRelayed, client: FtsoClient):
     parsed_response = client.get_data(root.voting_round_id)
 
-    provider_root = un_prefix_0x(parsed_response["merkleRoot"].lower())
+    provider_root = un_prefix_0x(parsed_response.merkleRoot.lower())
 
     if provider_root != root.merkle_root:
         logging.error(
@@ -28,12 +28,9 @@ def process_single_provider(root: ProtocolMessageRelayed, client: FtsoClient):
         )
         return None
 
-    leafs = parsed_response["tree"]
+    rand = [RandomResult.from_decoded_dict(parsed_response.random)]
 
-    random_leaf = leafs[0]
-    rand = [RandomResult.from_decoded_dict(random_leaf)]
-
-    res = [FeedResult.from_decoded_dict(leaf) for leaf in leafs[1:]]
+    res = [FeedResult.from_decoded_dict(leaf) for leaf in parsed_response.medians]
 
     tree_leafs = [r.hash.hex() for r in rand] + [r.hash.hex() for r in res]
 
@@ -67,10 +64,15 @@ class FtsoProcessor:
             )
             return None
         for client in self.providers:
-            data = process_single_provider(root, client)
-            if data is None:
+            try:
+                print(client.logging_name)
+                data = process_single_provider(root, client)
+                if data is None:
+                    continue
+                return data
+            except Exception as e:
+                logging.error("Error fetching data from provider %s: %s", client, e)
                 continue
-            return data
         # TODO: sentry check it can process logging.error
         capture_message(
             f"Unable to fetch data from any provider for voting round {root.voting_round_id}",

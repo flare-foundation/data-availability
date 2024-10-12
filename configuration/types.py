@@ -4,7 +4,7 @@ from typing import Self
 from attrs import field, frozen
 
 from configuration.contract_types import Contracts
-from processing.client.ftso_client import BaseClientConfig
+from processing.client.main import BaseClientConfig
 
 
 @frozen

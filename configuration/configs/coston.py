@@ -10,7 +10,7 @@ from configuration.types import (
     ProtocolProvider,
     SyncingConfig,
 )
-from processing.client.ftso_client import BaseClientConfig
+from processing.client.main import BaseClientConfig
 
 logger = logging.getLogger(__name__)
 
