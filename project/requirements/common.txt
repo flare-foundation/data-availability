@@ -1,0 +1,24 @@
+# tests
+ruff==0.4.10
+
+# Django Core
+django-types==0.19.1
+Django==5.0.6
+
+# postgres adapter
+psycopg[binary]==3.1.19
+
+# Django Extensions
+django-cors-headers==4.4.0 
+django-simple-history==3.4.0
+
+# Django Rest Framework
+djangorestframework-types==0.8.0
+djangorestframework==3.15.1
+drf-spectacular==0.27.2
+
+# WEB3
+web3==6.19.0
+
+# Sentry Monitoring
+sentry-sdk==2.6.0

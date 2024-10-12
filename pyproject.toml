@@ -1,0 +1,50 @@
+[tool.ruff]
+line-length = 120
+extend-exclude = ['venv', 'env', 'migrations']
+
+[tool.ruff.lint]
+select = [
+    'F',    # pyflakes
+    'E',    # pycodestyle
+    'W',    # pycodestyle
+    'I',    # isort
+    'UP',   # pyupgrade
+    'B',    # flake8-bugbear
+    'C',    # flake8-comprehensions
+    'DTZ',  # flake8-datetimez
+    'DJ',   # flake8-django
+    'RUF',  # ruff
+]
+
+ignore = [
+    'E203', # whitespace before punctuation, conflict with black
+    'E501', # line too long, handled by black
+    'C901', # complex structure, not needed
+]
+
+[tool.ruff.lint.per-file-ignores]
+'project/settings/*.py' = [
+    'F403', # undefined local with import star
+    'F405', # undefined local with import star usage
+    'E402', # module import not at top of file
+]
+
+'__init__.py' = [
+    'F401', # unused import
+    'E402', # module import not at top of file
+]
+
+[tool.ruff.lint.pyflakes]
+extend-generics = [
+    'django.db.models.ForeignKey',
+    'django.db.models.ForeignObject',
+    'django.db.models.OneToOneField',
+    'django.db.models.Manager',
+]
+
+[tool.coverage.run]
+omit = ['project/*', 'manage.py', '*/migrations/*']
+
+[tool.pyright]
+reportIncompatibleVariableOverride = false
+
