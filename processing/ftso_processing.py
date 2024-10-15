@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 def process_single_provider(root: ProtocolMessageRelayed, client: FtsoClient):
     parsed_response = client.get_data(root.voting_round_id)
-
     provider_root = un_prefix_0x(parsed_response.merkleRoot.lower())
 
     if provider_root != root.merkle_root:

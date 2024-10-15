@@ -1,5 +1,7 @@
 from attr import frozen
 
+# FTSO data types
+
 
 @frozen
 class FtsoRandomResponse:
@@ -26,3 +28,21 @@ class FtsoDataResponse:
     isSecureRandom: bool
     random: FtsoRandomResponse
     medians: list[FtsoVotingResponse]
+
+
+# FDC data types
+
+
+@frozen
+class FdcAttestationResponse:
+    roundId: int
+    request: str
+    response: str
+    abi: str
+    proof: list[str]
+
+
+@frozen
+class FdcDataResponse:
+    status: str
+    Attestations: list[FdcAttestationResponse]

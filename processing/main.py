@@ -70,6 +70,7 @@ class DataProcessor:
                     if ev.protocol_id != protocol_config.protocol_id:
                         continue
                     try:
+                        logger.debug(f"Processing round {ev}")
                         protocol_config.processing_function(ev)
                     except Exception as e:
                         capture_exception(e)
