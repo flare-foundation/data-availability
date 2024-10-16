@@ -44,5 +44,5 @@ class FdcAttestationResponse:
 
 @frozen
 class FdcDataResponse:
-    status: str
+    Status: str
     Attestations: list[FdcAttestationResponse]

@@ -20,11 +20,14 @@ class AttestationResult(models.Model):
         return keccak(hexstr=self.response_hex)
 
     @classmethod
-    def from_decoded_dict(cls, dict: FdcAttestationResponse):
+    def from_decoded_dict(cls, attestation_response: FdcAttestationResponse):
+        import pprint
+
+        pprint.pprint(attestation_response)
         return cls(
-            voting_round_id=dict.roundId,
-            request_hex=dict.request,
-            response_hex=dict.response,
-            abi=dict.abi,
-            proof=dict.proof,
+            voting_round_id=attestation_response.roundId,
+            request_hex=attestation_response.request,
+            response_hex=attestation_response.response,
+            abi=attestation_response.abi,
+            proof=attestation_response.proof,
         )
