@@ -41,8 +41,3 @@ class MerkleProofValueSerializer(serializers.Serializer):
     data = FeedValueStructSerializer()
     proof = serializers.ListField(child=serializers.CharField())
 
-
-class LatestVotingRoundSerializer(serializers.Serializer):
-    voting_round_id = serializers.IntegerField()
-    # TODO: not sure if the end of epoch is the best date to use
-    timestamp = serializers.IntegerField()

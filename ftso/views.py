@@ -4,7 +4,6 @@ from rest_framework import decorators, response, status, viewsets
 from ftso.models import FeedResult, RandomResult
 from ftso.serializers.data import (
     FeedValueNameSerializer,
-    LatestVotingRoundSerializer,
     MerkleProofValueSerializer,
 )
 from ftso.serializers.query import (
@@ -22,16 +21,6 @@ from processing.utils import un_prefix_0x
 class FeedResultViewSet(viewsets.GenericViewSet):
     def get_queryset(self):
         return FeedResult.objects.all()
-
-    @extend_schema(responses={200: LatestVotingRoundSerializer})
-    @decorators.action(detail=False, methods=["get"], url_path="latest-voting-round")
-    def latest_voting_round(self, request, *args, **kwargs):
-        latest_round = FeedResult.objects.latest("voting_round_id")
-        serializer = LatestVotingRoundSerializer(
-            data={"voting_round_id": latest_round.voting_round_id, "timestamp": latest_round.timestamp}
-        )
-        serializer.is_valid(raise_exception=True)
-        return response.Response(serializer.validated_data)
 
     @extend_schema(
         parameters=[FeedResultAvailableFeedsQuerySerializer],
