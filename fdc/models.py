@@ -21,9 +21,6 @@ class AttestationResult(models.Model):
 
     @classmethod
     def from_decoded_dict(cls, attestation_response: FdcAttestationResponse):
-        import pprint
-
-        pprint.pprint(attestation_response)
         return cls(
             voting_round_id=attestation_response.roundId,
             request_hex=attestation_response.request,

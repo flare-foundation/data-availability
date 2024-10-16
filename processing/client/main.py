@@ -3,7 +3,7 @@ import logging
 from attr import frozen
 from requests import Session
 
-from processing.client.types import FdcDataResponse, FtsoDataResponse
+from processing.client.types import FdcAttestationResponse, FdcDataResponse, FtsoDataResponse
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +78,9 @@ class FdcClient(_BaseClient):
         assert isinstance(res, dict)
         assert self._validation_status_check(res), f"Status not successful (OK) {request_url}"
         try:
+            attestations = [FdcAttestationResponse(**a) for a in res["Attestations"]]
+            res["Attestations"] = attestations
             return FdcDataResponse(**res)
         except Exception as e:
-            print("HERE!!")
             logger.error("Error parsing FdcDataResponse")
             raise e
