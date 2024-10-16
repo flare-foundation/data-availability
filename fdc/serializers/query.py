@@ -1,22 +1,11 @@
 from rest_framework import serializers
 
+from fsp.epoch import VotingEpoch
 
-class FeedResultAvailableFeedsQuerySerializer(serializers.Serializer):
+
+class ListAttestationResultQuerySerializer(serializers.Serializer):
     voting_round_id = serializers.IntegerField(
         required=False,
-        help_text="Voting round. Defaults to latest.",
-    )
-
-
-class FeedResultFeedWithProofQuerySerializer(serializers.Serializer):
-    voting_round_id = serializers.IntegerField(
-        required=False,
-        help_text="Voting round. Defaults to latest.",
-    )
-
-
-class FeedResultFeedsWithProofsQuerySerializer(serializers.Serializer):
-    voting_round_id = serializers.IntegerField(
-        required=False,
+        default=VotingEpoch.now_id,
         help_text="Voting round. Defaults to latest.",
     )
