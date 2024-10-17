@@ -27,11 +27,6 @@ services:
     volumes:
       - ./static/:/appdata/static
       - ./media/:/appdata/media
-    logging:
-      driver: syslog
-      options:
-        syslog-address: "udp://localhost:514"
-        tag: "${COMPOSE_PROJECT_NAME}_server|{{.ContainerName}}|{{.FullID}}"
 
   process-ftso-data:
     container_name: ${COMPOSE_PROJECT_NAME}_process_ftso_data
@@ -45,8 +40,16 @@ services:
     volumes:
       - ./static/:/appdata/static
       - ./media/:/appdata/media
-    logging:
-      driver: syslog
-      options:
-        syslog-address: "udp://localhost:514"
-        tag: "${COMPOSE_PROJECT_NAME}_process_ftso_data|{{.ContainerName}}|{{.FullID}}"
+
+  process-fdc-data:
+    container_name: ${COMPOSE_PROJECT_NAME}_process_fdc_data
+    image: ${DOCKER_IMAGE_URL}
+    command: start-process_fdc_data
+    env_file:
+      - .env
+    depends_on:
+      - postgresdb
+    restart: unless-stopped
+    volumes:
+      - ./static/:/appdata/static
+      - ./media/:/appdata/media
