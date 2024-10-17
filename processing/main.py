@@ -3,6 +3,7 @@ import time
 from typing import Callable
 
 from attr import frozen
+from django.db.models.aggregates import Max
 from sentry_sdk import capture_exception
 from web3 import Web3
 
@@ -30,7 +31,7 @@ class DataProcessor:
         self.relay_contract = relay
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
 
-        self.start_height = sync_config.start_height
+        self.default_start_height = sync_config.start_height
         self.max_processing_block_batch = sync_config.max_processing_block_batch
         self.processing_sleep_cycle = sync_config.processing_sleep_cycle
 
@@ -40,7 +41,11 @@ class DataProcessor:
         RELAY_EVENT = self.relay_contract.events[self.RELAY_EVENT_NAME]
         EVENT_SIGNATURE = {un_prefix_0x(RELAY_EVENT.signature).lower()}
 
-        latest_processed_height = self.start_height
+        db_processed_height = ProtocolMessageRelayed.objects.filter(
+            protocol_id=protocol_config.protocol_id,
+        ).aggregate(m=Max("block"))["m"]
+
+        latest_processed_height = db_processed_height or self.default_start_height
 
         while True:
             height = self.w3.eth.get_block_number()

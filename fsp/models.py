@@ -24,6 +24,7 @@ def event_data_extract_args(event_data: EventData, *args: str):
 class ProtocolMessageRelayed(models.Model):
     EVENT_NAME = "ProtocolMessageRelayed"
 
+    block = models.IntegerField()
     protocol_id = models.PositiveSmallIntegerField()
     voting_round_id = models.PositiveIntegerField()
     is_secure_random = models.BooleanField()
@@ -49,6 +50,7 @@ class ProtocolMessageRelayed(models.Model):
         merkle_root = un_prefix_0x(_merkle_root.hex().lower())
 
         return cls(
+            block=event_data["blockNumber"],
             protocol_id=protocol_id,
             voting_round_id=voting_round_id,
             is_secure_random=is_secure_random,
