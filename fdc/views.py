@@ -1,9 +1,9 @@
 from drf_spectacular.utils import extend_schema
-from rest_framework import response, viewsets, decorators
+from rest_framework import decorators, response, viewsets
 
 from fdc.models import AttestationResult
 
-from .serializers.data import AttestationResultSerializer
+from .serializers.data import AttestationMinimalProofSerializer
 from .serializers.query import ListAttestationResultQuerySerializer
 from .serializers.request import AttestationTypeGetByRoundIdBytesRequest
 
@@ -14,12 +14,12 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
 
     @extend_schema(
         parameters=[ListAttestationResultQuerySerializer],
-        responses=AttestationResultSerializer(many=True),
+        responses=AttestationMinimalProofSerializer(many=True),
     )
     def list(self, request, *args, **kwargs):
-        self.serializer_class = AttestationResultSerializer
+        self.serializer_class = AttestationMinimalProofSerializer
 
-        _query_params = ListAttestationResultQuerySerializer(self.request.query_params)
+        _query_params = ListAttestationResultQuerySerializer(data=self.request.query_params)
         _query_params.is_valid(raise_exception=True)
         query_params = _query_params.validated_data
 
@@ -31,14 +31,16 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
 
     @extend_schema(
         request=AttestationTypeGetByRoundIdBytesRequest,
-        responses=AttestationResultSerializer,
+        responses=AttestationMinimalProofSerializer,
     )
     @decorators.action(detail=False, methods=["post"])
     def get_by_round_id_bytes(self, request, *args, **kwargs):
-        self.serializer_class = AttestationResultSerializer
+        self.serializer_class = AttestationMinimalProofSerializer
 
-        _body = AttestationTypeGetByRoundIdBytesRequest(self.request.body)
+        _body = AttestationTypeGetByRoundIdBytesRequest(data=self.request.data)
+        print("HERE")
         _body.is_valid(raise_exception=True)
+        print("HERE2")
         body = _body.validated_data
 
         obj = self.get_queryset().get(
