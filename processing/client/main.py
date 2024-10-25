@@ -9,7 +9,7 @@ from processing.client.types import FdcDataResponse, FtsoDataResponse
 logger = logging.getLogger(__name__)
 
 
-class _BaseClient:
+class BaseClient:
     status_keyword = "status"
 
     def __init__(self, url: str, api_key: str | None, logging_name: str):
@@ -38,7 +38,7 @@ class _BaseClient:
         return True
 
 
-class FtsoClient(_BaseClient):
+class FtsoClient(BaseClient):
     def get_data(self, voting_round_id: int) -> FtsoDataResponse:
         request_url = f"/data/{voting_round_id}"
         response = self._get(request_url)
@@ -61,7 +61,7 @@ class FtsoClient(_BaseClient):
             raise e
 
 
-class FdcClient(_BaseClient):
+class FdcClient(BaseClient):
     status_keyword = "Status"
 
     def get_data(self, voting_round_id: int) -> FdcDataResponse:

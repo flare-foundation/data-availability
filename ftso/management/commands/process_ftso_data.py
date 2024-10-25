@@ -20,6 +20,6 @@ class Command(BaseCommand):
         processor.run(
             ProtocolProcessingConfig(
                 protocol_id=config.ftso.protocol_id,
-                processing_function=ftso_processor.process,
+                processor=ftso_processor,
             )
         )

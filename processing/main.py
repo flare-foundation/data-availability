@@ -1,7 +1,6 @@
 import logging
 import queue
 import time
-from typing import Callable
 
 from attr import frozen
 from django.db.models.aggregates import Max
@@ -11,6 +10,7 @@ from web3 import Web3
 from configuration.contract_types import Contract
 from configuration.types import SyncingConfig
 from fsp.models import ProtocolMessageRelayed
+from processing.processing import Processor
 from processing.utils import un_prefix_0x
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 @frozen
 class ProtocolProcessingConfig:
     protocol_id: int
-    processing_function: Callable[[ProtocolMessageRelayed], None]
+    processor: Processor
 
 
 class DataProcessor:
@@ -78,7 +78,7 @@ class DataProcessor:
                         continue
                     try:
                         logger.debug(f"Processing round {ev}")
-                        protocol_config.processing_function(ev)
+                        protocol_config.processor.process(ev)
                     except Exception as e:
                         processing_qeue.put(ev)
                         capture_exception(e)
@@ -90,7 +90,7 @@ class DataProcessor:
                 ev = processing_qeue.get()
                 try:
                     logger.debug(f"Processing round {ev}")
-                    protocol_config.processing_function(ev)
+                    protocol_config.processor.process(ev)
                 except Exception as e:
                     capture_exception(e)
                     logger.error(f"Round processing failed for round {ev}")

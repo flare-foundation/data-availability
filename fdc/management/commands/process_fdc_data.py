@@ -17,10 +17,9 @@ class Command(BaseCommand):
 
         fdc_processor = FdcProcessor(config.fdc)
         processor = DataProcessor(config.rpc_url, config.syncing_config, config.contracts.Relay)
-
         processor.run(
             ProtocolProcessingConfig(
                 protocol_id=config.fdc.protocol_id,
-                processing_function=fdc_processor.process,
+                processor=fdc_processor,
             )
         )
