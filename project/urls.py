@@ -16,11 +16,25 @@ Including another URLconf
 
 from django.conf import settings
 from django.urls import include, path
+from drf_spectacular.utils import extend_schema, inline_serializer
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from rest_framework import decorators, response, serializers, status
+
+
+@extend_schema(
+    responses=inline_serializer(
+        name="Health",
+        fields={"healthy": serializers.BooleanField()},
+    )
+)
+@decorators.api_view(["get"])
+def health(request):
+    return response.Response({"healthy": True}, status=status.HTTP_200_OK)
+
 
 urlpatterns = [
     # drf-spectacular schema and ui endpoints
@@ -35,6 +49,7 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
+    path("api/health", health),
 ]
 
 # v0 api
