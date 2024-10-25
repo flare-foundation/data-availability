@@ -1,8 +1,4 @@
-# tests
-ruff==0.4.10
-
 # Django Core
-django-types==0.19.1
 Django==5.0.6
 
 # postgres adapter
@@ -17,12 +13,19 @@ djangorestframework-types==0.8.0
 djangorestframework==3.15.1
 drf-spectacular==0.27.2
 
-# WEB3
+# web3
 web3==6.19.0
 
 # Sentry Monitoring
 sentry-sdk==2.6.0
 
-# Others
+# Prometheus Monitoring
+prometheus-client==0.19.0
+django-prometheus==2.3.1
+
+# dataclasses and serialization
 attrs==24.2.0
 cattrs==24.1.2
+
+# uwsgi
+uWSGI==2.0.26
