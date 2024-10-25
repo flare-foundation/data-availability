@@ -61,12 +61,3 @@ urlpatterns += [
 
 if "django_prometheus" in settings.INSTALLED_APPS:
     urlpatterns.append(path("", include("django_prometheus.urls")))
-
-    from prometheus_client import Info
-
-    info = Info("project_commit_hash", "Current commit hash of this instance")
-    info.info({"commit_hash": settings.PROJECT_COMMIT_HASH})
-    info = Info("project_version", "Current version")
-    info.info({"version": settings.PROJECT_VERSION})
-    info = Info("project_build_date", "Docker image build date")
-    info.info({"build_date": settings.PROJECT_BUILD_DATE})
