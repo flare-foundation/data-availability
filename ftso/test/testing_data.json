@@ -1,0 +1,511 @@
+{
+    "status": "OK",
+    "protocolId": 100,
+    "votingRoundId": 785250,
+    "merkleRoot": "0x9124d58e40bb8ad0cfb8c022e49d103d487d4cf7a23d57077dd9d726e316730a",
+    "isSecureRandom": true,
+    "tree": [
+        {
+            "votingRoundId": 785250,
+            "value": "0x54f2ca3184ad459bc8e518496602f2bb1e414902a47e15a388a11b8255565f82",
+            "isSecure": true
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01414156452f555344000000000000000000000000",
+            "value": 1563326,
+            "turnoutBIPS": 9280,
+            "decimals": 4
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014144412f55534400000000000000000000000000",
+            "value": 35449,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01414c474f2f555344000000000000000000000000",
+            "value": 12261,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014150542f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014152422f55534400000000000000000000000000",
+            "value": 56243,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x0141544f4d2f555344000000000000000000000000",
+            "value": 443729,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01415641582f555344000000000000000000000000",
+            "value": 2773096,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014243482f55534400000000000000000000000000",
+            "value": 3679030,
+            "turnoutBIPS": 9280,
+            "decimals": 4
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014245414d2f555344000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01424e422f55534400000000000000000000000000",
+            "value": 5968800,
+            "turnoutBIPS": 9280,
+            "decimals": 4
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01424f4e4b2f555344000000000000000000000000",
+            "value": 24231,
+            "turnoutBIPS": 9280,
+            "decimals": 9
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014254432f55534400000000000000000000000000",
+            "value": 6789754,
+            "turnoutBIPS": 9280,
+            "decimals": 2
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014441492f55534400000000000000000000000000",
+            "value": 99960,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01444f47452f555344000000000000000000000000",
+            "value": 12670,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01444f542f55534400000000000000000000000000",
+            "value": 431887,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01454e412f55534400000000000000000000000000",
+            "value": 38992,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014554432f55534400000000000000000000000000",
+            "value": 1935684,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014554482f55534400000000000000000000000000",
+            "value": 2620439,
+            "turnoutBIPS": 9280,
+            "decimals": 3
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x0145544846492f5553440000000000000000000000",
+            "value": 167725,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014645542f55534400000000000000000000000000",
+            "value": 143030,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x0146494c2f55534400000000000000000000000000",
+            "value": 374665,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01464c522f55534400000000000000000000000000",
+            "value": 14789,
+            "turnoutBIPS": 9280,
+            "decimals": 6
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x0146544d2f55534400000000000000000000000000",
+            "value": 73317,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x0147414c412f555344000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014752542f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01484241522f555344000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01484e542f55534400000000000000000000000000",
+            "value": 615741,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014943502f55534400000000000000000000000000",
+            "value": 792458,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01494d582f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01494e4a2f55534400000000000000000000000000",
+            "value": 2101777,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014a55502f55534400000000000000000000000000",
+            "value": 86379,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014c444f2f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014c454f2f55534400000000000000000000000000",
+            "value": 610193,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014c494e4b2f555344000000000000000000000000",
+            "value": 1118820,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014c54432f55534400000000000000000000000000",
+            "value": 7047172,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014e4541522f555344000000000000000000000000",
+            "value": 492057,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014e4f542f55534400000000000000000000000000",
+            "value": 81291,
+            "turnoutBIPS": 9280,
+            "decimals": 7
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014f4e444f2f555344000000000000000000000000",
+            "value": 73027,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x014f502f5553440000000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01504550452f555344000000000000000000000000",
+            "value": 104102,
+            "turnoutBIPS": 9280,
+            "decimals": 10
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01504f4c2f55534400000000000000000000000000",
+            "value": 37004,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01505954482f555344000000000000000000000000",
+            "value": 35286,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01514e542f55534400000000000000000000000000",
+            "value": 6608843,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x0152454e4445522f55534400000000000000000000",
+            "value": 533215,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01524e44522f555344000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x0152554e452f555344000000000000000000000000",
+            "value": 516102,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x015347422f55534400000000000000000000000000",
+            "value": 63959,
+            "turnoutBIPS": 9280,
+            "decimals": 7
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01534849422f555344000000000000000000000000",
+            "value": 18683,
+            "turnoutBIPS": 9280,
+            "decimals": 9
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01534f4c2f55534400000000000000000000000000",
+            "value": 1547379,
+            "turnoutBIPS": 9280,
+            "decimals": 4
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x015354524b2f555344000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x015354582f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x015355492f55534400000000000000000000000000",
+            "value": 204801,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x0154414f2f55534400000000000000000000000000",
+            "value": 5771250,
+            "turnoutBIPS": 9280,
+            "decimals": 4
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x015449412f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01544f4e2f55534400000000000000000000000000",
+            "value": 524687,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x015452582f55534400000000000000000000000000",
+            "value": 16001,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01554e492f55534400000000000000000000000000",
+            "value": 763705,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01555344432f555344000000000000000000000000",
+            "value": 99997,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01555344542f555344000000000000000000000000",
+            "value": 99983,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x015645542f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x015749462f55534400000000000000000000000000",
+            "value": 256569,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x015844432f55534400000000000000000000000000",
+            "value": 27505,
+            "turnoutBIPS": 9280,
+            "decimals": 6
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x01584c4d2f55534400000000000000000000000000",
+            "value": 94433,
+            "turnoutBIPS": 9280,
+            "decimals": 6
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x015852502f55534400000000000000000000000000",
+            "value": 54762,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x0158545a2f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x024155442f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x024555522f55534400000000000000000000000000",
+            "value": 108597,
+            "turnoutBIPS": 9280,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x024a50592f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x035841472f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 5
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x035841552f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 3
+        },
+        {
+            "votingRoundId": 785250,
+            "id": "0x035850542f55534400000000000000000000000000",
+            "value": 0,
+            "turnoutBIPS": 0,
+            "decimals": 4
+        }
+    ]
+}

@@ -52,7 +52,7 @@ class SyncingConfig:
 class Configuration:
     rpc_url: str
     epoch_settings: EpochSettings
-    ftso_provider: ProtocolProvider
-    fdc_provider: ProtocolProvider
+    ftso_provider: ProtocolProvider | None
+    fdc_provider: ProtocolProvider | None
     contracts: Contracts
     syncing_config: SyncingConfig

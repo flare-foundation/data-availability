@@ -5,6 +5,7 @@ from eth_abi.abi import encode
 from web3 import Web3
 
 from configuration.config import config
+from processing.client.types import FtsoRandomResponse, FtsoVotingResponse
 from processing.utils import un_prefix_0x
 
 
@@ -60,24 +61,13 @@ class FeedResult(models.Model):
         return base_hash(self.STRUCT_ABI, name_mapper)
 
     @classmethod
-    def from_decoded_dict(cls, dict):
-        expected_keys = ["votingRoundId", "id", "value", "decimals", "turnoutBIPS"]
-        for k in expected_keys:
-            if k not in dict:
-                raise KeyError(f"missing key {k}")
-
-        feed_id = un_prefix_0x(dict["id"].lower())
-        round_id = int(dict["votingRoundId"])
-        value = int(dict["value"])
-        bips = int(dict["turnoutBIPS"])
-        decimals = int(dict["decimals"])
-
+    def from_decoded_dict(cls, response: FtsoVotingResponse):
         return cls(
-            voting_round_id=round_id,
-            feed_id=feed_id,
-            value=value,
-            turnout_bips=bips,
-            decimals=decimals,
+            voting_round_id=response.votingRoundId,
+            feed_id=un_prefix_0x(response.id.lower()),
+            value=response.value,
+            turnout_bips=response.turnoutBIPS,
+            decimals=response.decimals,
         )
 
 
@@ -121,14 +111,9 @@ class RandomResult(models.Model):
         return base_hash(self.STRUCT_ABI, name_mapper)
 
     @classmethod
-    def from_decoded_dict(cls, dict):
-        expected_keys = ["votingRoundId", "value", "isSecure"]
-        for k in expected_keys:
-            if k not in dict:
-                raise KeyError(f"missing key {k}")
-
-        round_id = int(dict["votingRoundId"])
-        value = un_prefix_0x(dict["value"].lower())
-        is_secure = bool(dict["isSecure"])
-
-        return cls(voting_round_id=round_id, value=value, is_secure=is_secure)
+    def from_decoded_dict(cls, response: FtsoRandomResponse):
+        return cls(
+            voting_round_id=response.votingRoundId,
+            value=un_prefix_0x(response.value.lower()),
+            is_secure=response.isSecure,
+        )

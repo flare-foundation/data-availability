@@ -50,7 +50,10 @@ class FdcProcessor:
 
         for provider in self.providers:
             try:
-                return process_single_fdc_provider(root, provider)
+                data = process_single_fdc_provider(root, provider)
+                if data is None:
+                    continue
+                return data
             except Exception as e:
                 logging.error(
                     "Error processing provider %s: %s",

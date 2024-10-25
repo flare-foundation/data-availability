@@ -26,15 +26,22 @@ class ProviderCredentials:
         return zip(self.names, self.urls, self.keys, strict=True)
 
 
-def parse_protocol_providers(protocol_prefix: str) -> ProviderCredentials:
+def parse_protocol_providers(protocol_prefix: str) -> ProviderCredentials | None:
     e = os.environ
 
-    provider_names = e.get(f"{protocol_prefix}_PROVIDER_LOGGING_NAMES", None)
-    provider_urls = e.get(f"{protocol_prefix}_PROVIDER_URLS", None)
-    provider_keys = e.get(f"{protocol_prefix}_PROVIDER_API_KEYS", None)
+    provider_names = e.get(f"{protocol_prefix}_PROVIDER_LOGGING_NAMES")
+    provider_urls = e.get(f"{protocol_prefix}_PROVIDER_URLS")
+    provider_keys = e.get(f"{protocol_prefix}_PROVIDER_API_KEYS")
 
-    if provider_urls is None or provider_keys is None or provider_names is None:
-        raise ValueError(f"{protocol_prefix} provider names, urls and keys must be set")
+    providers = zip((provider_names, provider_urls, provider_keys), ("names", "urls", "keys"))
+    boolean = False
+    for provider, vlaue in providers:
+        if vlaue is None:
+            boolean = True
+            logger.warning(f"{protocol_prefix} {provider} are not set.")
+    if boolean:
+        return None
+    assert provider_names is not None and provider_urls is not None and provider_keys is not None
 
     provider_names = provider_names.split(",")
     provider_urls = provider_urls.split(",")
@@ -65,21 +72,31 @@ def get_config() -> Configuration:
     ftso_providers = parse_protocol_providers("FTSO")
     fdc_providers = parse_protocol_providers("FDC")
 
-    return Configuration(
-        rpc_url=RPC_URL,
-        epoch_settings=epoch_settings,
-        ftso_provider=ProtocolProvider(
+    if ftso_providers is not None:
+        ftso_provider = ProtocolProvider(
             protocol_id=100,
             client_configs=[
                 BaseClientConfig(logging_name=name, url=url, api_key=key) for name, url, key in ftso_providers.iterate()
             ],
-        ),
-        fdc_provider=ProtocolProvider(
+        )
+    else:
+        ftso_provider = None
+
+    if fdc_providers is not None:
+        fdc_provider = ProtocolProvider(
             protocol_id=200,
             client_configs=[
                 BaseClientConfig(logging_name=name, url=url, api_key=key) for name, url, key in fdc_providers.iterate()
             ],
-        ),
+        )
+    else:
+        fdc_provider = None
+
+    return Configuration(
+        rpc_url=RPC_URL,
+        epoch_settings=epoch_settings,
+        ftso_provider=ftso_provider,
+        fdc_provider=fdc_provider,
         contracts=contracts,
         syncing_config=SyncingConfig(
             start_height=24_256_750,

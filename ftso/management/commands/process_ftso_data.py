@@ -7,6 +7,8 @@ from processing.main import DataProcessor, ProtocolProcessingConfig
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
+        if config.ftso_provider is None:
+            raise ValueError("FTSO provider names, urls and keys must be set")
         ftso_processor = FtsoProcessor(config.ftso_provider)
         processor = DataProcessor(config.rpc_url, config.syncing_config, config.contracts.Relay)
         processor.run(

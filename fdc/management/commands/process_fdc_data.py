@@ -7,6 +7,8 @@ from processing.main import DataProcessor, ProtocolProcessingConfig
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
+        if config.fdc_provider is None:
+            raise ValueError("FDC provider names, urls and keys must be set")
         fdc_processor = FdcProcessor(config.fdc_provider)
         processor = DataProcessor(config.rpc_url, config.syncing_config, config.contracts.Relay)
         processor.run(

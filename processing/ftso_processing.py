@@ -28,12 +28,8 @@ def process_single_provider(root: ProtocolMessageRelayed, client: FtsoClient):
         return None
 
     rand = [RandomResult.from_decoded_dict(parsed_response.random)]
-
     res = [FeedResult.from_decoded_dict(leaf) for leaf in parsed_response.medians]
-
-    tree_leafs = [r.hash.hex() for r in rand] + [r.hash.hex() for r in res]
-
-    merkle_tree = MerkleTree(tree_leafs)
+    merkle_tree = MerkleTree([r.hash.hex() for r in rand] + [r.hash.hex() for r in res])
 
     if merkle_tree.root and un_prefix_0x(merkle_tree.root.lower()) != provider_root:
         logging.error(
@@ -62,6 +58,7 @@ class FtsoProcessor:
                 root.protocol_id,
             )
             return None
+
         for client in self.providers:
             try:
                 print(client.logging_name)
@@ -85,7 +82,7 @@ class FtsoProcessor:
     def process(self, root: ProtocolMessageRelayed):
         data = self.fetch_ftso_merkle_tree(root)
         if data is None:
-            return
+            return None
         rand, res = data
         with transaction.atomic():
             ProtocolMessageRelayed.objects.bulk_create([root])

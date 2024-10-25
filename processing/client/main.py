@@ -1,9 +1,10 @@
 import logging
 
+import cattrs
 from attr import frozen
 from requests import Session
 
-from processing.client.types import FdcAttestationResponse, FdcDataResponse, FtsoDataResponse
+from processing.client.types import FdcDataResponse, FtsoDataResponse
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class _BaseClient:
     def _validation_status_check(self, response):
         if self.status_keyword not in response:
             return False
-        if self.status_keyword in response and response[self.status_keyword] != "OK":
+        if response[self.status_keyword] != "OK":
             return False
         return True
 
@@ -55,14 +56,13 @@ class FtsoClient(_BaseClient):
         if "tree" not in res:
             raise Exception("Tree not in response")
 
-        if len(res["tree"]) < 1:
+        if len(res["tree"]) == 0:
             raise Exception("Tree is empty")
 
         res["random"] = res["tree"][0]
         res["medians"] = res["tree"][1:]
-        del res["tree"]
         try:
-            return FtsoDataResponse(**res)
+            return cattrs.structure(res, FtsoDataResponse)
         except Exception as e:
             raise e
 
@@ -78,9 +78,7 @@ class FdcClient(_BaseClient):
         assert isinstance(res, dict)
         assert self._validation_status_check(res), f"Status not successful (OK) {request_url}"
         try:
-            attestations = [FdcAttestationResponse(**a) for a in res["Attestations"]]
-            res["Attestations"] = attestations
-            return FdcDataResponse(**res)
+            return cattrs.structure(res, FdcDataResponse)
         except Exception as e:
             logger.error("Error parsing FdcDataResponse")
             raise e

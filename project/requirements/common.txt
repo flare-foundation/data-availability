@@ -22,3 +22,7 @@ web3==6.19.0
 
 # Sentry Monitoring
 sentry-sdk==2.6.0
+
+# Others
+attrs==24.2.0
+cattrs==24.1.2

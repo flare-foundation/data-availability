@@ -40,17 +40,25 @@ class FspViewSet(viewsets.GenericViewSet):
             "latest_fdc": {"voting_round_id": -1, "start_timestamp": -1},
         }
 
-        # NOTE: for this to work saving to DB must be atomic
-        latest_ftso = (
-            ProtocolMessageRelayed.objects.filter(protocol_id=config.ftso_provider.protocol_id)
-            .order_by("-voting_round_id")
-            .first()
-        )
-        latest_fdc = (
-            ProtocolMessageRelayed.objects.filter(protocol_id=config.fdc_provider.protocol_id)
-            .order_by("-voting_round_id")
-            .first()
-        )
+        if config.ftso_provider is not None:
+            # NOTE: for this to work saving to DB must be atomic
+            latest_ftso = (
+                ProtocolMessageRelayed.objects.filter(protocol_id=config.ftso_provider.protocol_id)
+                .order_by("-voting_round_id")
+                .first()
+            )
+        else:
+            latest_ftso = None
+
+        if config.fdc_provider is not None:
+            latest_fdc = (
+                ProtocolMessageRelayed.objects.filter(protocol_id=config.fdc_provider.protocol_id)
+                .order_by("-voting_round_id")
+                .first()
+            )
+        else:
+            latest_fdc = None
+
         if latest_ftso is not None:
             vef = VotingEpoch(latest_ftso.voting_round_id)
             data["latest_ftso"] = {"voting_round_id": vef.n, "start_timestamp": vef.start_s}
