@@ -1,4 +1,6 @@
 import json
+import logging
+import os
 from typing import Self
 
 from attrs import field, frozen
@@ -58,3 +60,48 @@ class Configuration:
     fdc: ProtocolConfig
     contracts: Contracts
     syncing_config: SyncingConfig
+
+
+logger = logging.getLogger(__name__)
+
+
+def parse_protocol_providers(protocol_prefix: str) -> list[ProtocolProvider]:
+    assert protocol_prefix in ["FTSO", "FDC"], f"unknown protocol {protocol_prefix}"
+
+    e = os.environ
+
+    provider_names = e.get(f"{protocol_prefix}_PROVIDER_LOGGING_NAMES")
+    provider_urls = e.get(f"{protocol_prefix}_PROVIDER_URLS")
+    provider_keys = e.get(f"{protocol_prefix}_PROVIDER_API_KEYS")
+
+    providers = zip((provider_names, provider_urls, provider_keys), ("names", "urls", "keys"))
+
+    valid_config = True
+    for provider, value in providers:
+        if value is not None:
+            continue
+        valid_config = False
+        logger.debug(f"{protocol_prefix} {provider} are not set.")
+
+    if not valid_config:
+        return []
+
+    assert provider_names is not None and provider_urls is not None and provider_keys is not None
+
+    provider_names = provider_names.split(",")
+    provider_urls = provider_urls.split(",")
+    provider_keys = provider_keys.split(",")
+
+    if len(provider_urls) != len(provider_keys) != len(provider_names):
+        raise ValueError(f"{protocol_prefix} provider names urls and keys must be of equal length (comma separated)")
+
+    logger.debug(f"{protocol_prefix} providers ({len(provider_names)}): {provider_names}")
+
+    return [
+        ProtocolProvider(n, u, a or None)
+        for n, u, a in zip(
+            provider_names,
+            provider_urls,
+            provider_keys,
+        )
+    ]

@@ -21,7 +21,7 @@ def get_config() -> Configuration:
 
     epoch_settings = EpochSettings.from_json(
         f"configuration/chain/{CHAIN}/config.json",
-        first_v2_reward_epoch=2466,
+        first_v2_reward_epoch=183,
     )
 
     contracts = Contracts.default()
@@ -37,7 +37,7 @@ def get_config() -> Configuration:
     )
 
     starting_config = SyncingConfig(
-        start_height=int(e.get("START_HEIGHT", "24237186")),  # old one: 24862497
+        start_height=int(e.get("START_HEIGHT", "58653823")),
         max_processing_block_batch=50,
         processing_sleep_cycle=5,
     )
