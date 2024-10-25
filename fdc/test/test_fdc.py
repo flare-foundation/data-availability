@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
-from configuration.types import ProtocolProvider
+from configuration.types import ProtocolConfig
 from fdc.models import AttestationResult
 from fsp.models import ProtocolMessageRelayed
 from processing.client.main import FdcClient
@@ -68,7 +68,7 @@ class FdcProcessorTest(TestCase):
             is_secure_random=True,
             merkle_root="dd4a35a73e76d1326be609b349fff9beccc6516ef60692425cdc14a78965c11c",
         )
-        self.FDCprocessor = FdcProcessor(ProtocolProvider(protocol_id=200, client_configs=[]))
+        self.FDCprocessor = FdcProcessor(ProtocolConfig(protocol_id=200, providers=[]))
 
         with open("fdc/test/testing_data.json") as json_data:
             data = json.load(json_data)

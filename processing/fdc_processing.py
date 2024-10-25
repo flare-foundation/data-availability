@@ -3,7 +3,7 @@ import logging
 from django.db import transaction
 from sentry_sdk import capture_message
 
-from configuration.types import ProtocolProvider
+from configuration.types import ProtocolConfig
 from fdc.models import AttestationResult
 from fsp.models import ProtocolMessageRelayed
 from processing.client.main import FdcClient
@@ -34,9 +34,9 @@ def process_single_fdc_provider(root: ProtocolMessageRelayed, client: FdcClient)
 
 
 class FdcProcessor:
-    def __init__(self, config: ProtocolProvider):
+    def __init__(self, config: ProtocolConfig):
         self.protocol_id = config.protocol_id
-        self.providers = [FdcClient.from_config(conf) for conf in config.client_configs]
+        self.providers = [FdcClient.from_config(conf) for conf in config.providers]
 
     def fetch_fdc_merkle_tree(self, root: ProtocolMessageRelayed):
         if root.protocol_id != self.protocol_id:

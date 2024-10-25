@@ -1,32 +1,23 @@
 import logging
 import os
 
-from attr import frozen
 from django.conf import settings
 
 from configuration.contract_types import Contracts
 from configuration.types import (
     Configuration,
     EpochSettings,
+    ProtocolConfig,
     ProtocolProvider,
     SyncingConfig,
 )
-from processing.client.main import BaseClientConfig
 
 logger = logging.getLogger(__name__)
 
 
-@frozen
-class ProviderCredentials:
-    names: list[str]
-    urls: list[str]
-    keys: list[str]
+def parse_protocol_providers(protocol_prefix: str) -> list[ProtocolProvider]:
+    assert protocol_prefix in ["FTSO", "FDC"], f"unknown protocol {protocol_prefix}"
 
-    def iterate(self):
-        return zip(self.names, self.urls, self.keys, strict=True)
-
-
-def parse_protocol_providers(protocol_prefix: str) -> ProviderCredentials | None:
     e = os.environ
 
     provider_names = e.get(f"{protocol_prefix}_PROVIDER_LOGGING_NAMES")
@@ -34,13 +25,17 @@ def parse_protocol_providers(protocol_prefix: str) -> ProviderCredentials | None
     provider_keys = e.get(f"{protocol_prefix}_PROVIDER_API_KEYS")
 
     providers = zip((provider_names, provider_urls, provider_keys), ("names", "urls", "keys"))
-    boolean = False
-    for provider, vlaue in providers:
-        if vlaue is None:
-            boolean = True
-            logger.warning(f"{protocol_prefix} {provider} are not set.")
-    if boolean:
-        return None
+
+    valid_config = True
+    for provider, value in providers:
+        if value is not None:
+            continue
+        valid_config = False
+        logger.debug(f"{protocol_prefix} {provider} are not set.")
+
+    if not valid_config:
+        return []
+
     assert provider_names is not None and provider_urls is not None and provider_keys is not None
 
     provider_names = provider_names.split(",")
@@ -50,9 +45,16 @@ def parse_protocol_providers(protocol_prefix: str) -> ProviderCredentials | None
     if len(provider_urls) != len(provider_keys) != len(provider_names):
         raise ValueError(f"{protocol_prefix} provider names urls and keys must be of equal length (comma separated)")
 
-    logger.info(f"{protocol_prefix} providers ({len(provider_names)}): {provider_names}")
+    logger.debug(f"{protocol_prefix} providers ({len(provider_names)}): {provider_names}")
 
-    return ProviderCredentials(names=provider_names, urls=provider_urls, keys=provider_keys)
+    return [
+        ProtocolProvider(n, u, a or None)
+        for n, u, a in zip(
+            provider_names,
+            provider_urls,
+            provider_keys,
+        )
+    ]
 
 
 def get_config() -> Configuration:
@@ -69,37 +71,24 @@ def get_config() -> Configuration:
 
     contracts = Contracts.default()
 
-    ftso_providers = parse_protocol_providers("FTSO")
-    fdc_providers = parse_protocol_providers("FDC")
+    ftso_provider = ProtocolConfig(
+        protocol_id=100,
+        providers=parse_protocol_providers("FTSO"),
+    )
 
-    if ftso_providers is not None:
-        ftso_provider = ProtocolProvider(
-            protocol_id=100,
-            client_configs=[
-                BaseClientConfig(logging_name=name, url=url, api_key=key) for name, url, key in ftso_providers.iterate()
-            ],
-        )
-    else:
-        ftso_provider = None
-
-    if fdc_providers is not None:
-        fdc_provider = ProtocolProvider(
-            protocol_id=200,
-            client_configs=[
-                BaseClientConfig(logging_name=name, url=url, api_key=key) for name, url, key in fdc_providers.iterate()
-            ],
-        )
-    else:
-        fdc_provider = None
+    fdc_provider = ProtocolConfig(
+        protocol_id=200,
+        providers=parse_protocol_providers("FDC"),
+    )
 
     return Configuration(
         rpc_url=RPC_URL,
         epoch_settings=epoch_settings,
-        ftso_provider=ftso_provider,
-        fdc_provider=fdc_provider,
+        ftso=ftso_provider,
+        fdc=fdc_provider,
         contracts=contracts,
         syncing_config=SyncingConfig(
-            start_height=24_256_750,
+            start_height=24862497,
             max_processing_block_batch=50,
             processing_sleep_cycle=5,
         ),

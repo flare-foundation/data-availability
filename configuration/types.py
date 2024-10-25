@@ -4,7 +4,6 @@ from typing import Self
 from attrs import field, frozen
 
 from configuration.contract_types import Contracts
-from processing.client.main import BaseClientConfig
 
 
 @frozen
@@ -14,16 +13,12 @@ class EpochSettings:
     first_reward_epoch_start_voting_round_id: int
     reward_epoch_duration_in_voting_epochs: int
     first_v2_reward_epoch: int
-    ftso_reveal_deadline_seconds: int = field(init=False, default=20)
-    # TODO:(matej) might be able to pick this up from somewhere else
+    ftso_reveal_deadline_seconds: int = field(init=False, default=45)
 
     _ATTRIBUTE_MAPPER = (
         ("firstVotingRoundStartTs", "first_voting_round_start_ts"),
         ("votingEpochDurationSeconds", "voting_epoch_duration_seconds"),
-        (
-            "firstRewardEpochStartVotingRoundId",
-            "first_reward_epoch_start_voting_round_id",
-        ),
+        ("firstRewardEpochStartVotingRoundId", "first_reward_epoch_start_voting_round_id"),
         ("rewardEpochDurationInVotingEpochs", "reward_epoch_duration_in_voting_epochs"),
     )
 
@@ -37,8 +32,15 @@ class EpochSettings:
 
 @frozen
 class ProtocolProvider:
+    name: str
+    url: str
+    api_key: str | None
+
+
+@frozen
+class ProtocolConfig:
     protocol_id: int
-    client_configs: list[BaseClientConfig]
+    providers: list[ProtocolProvider]
 
 
 @frozen
@@ -52,7 +54,7 @@ class SyncingConfig:
 class Configuration:
     rpc_url: str
     epoch_settings: EpochSettings
-    ftso_provider: ProtocolProvider | None
-    fdc_provider: ProtocolProvider | None
+    ftso: ProtocolConfig
+    fdc: ProtocolConfig
     contracts: Contracts
     syncing_config: SyncingConfig

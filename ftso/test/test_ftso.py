@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
-from configuration.types import ProtocolProvider
+from configuration.types import ProtocolConfig
 from fsp.models import ProtocolMessageRelayed
 from ftso.models import FeedResult, RandomResult
 from processing.client.main import FtsoClient
@@ -61,7 +61,7 @@ class FtsoProcessorTest(TestCase):
             is_secure_random=True,
             merkle_root="9124d58e40bb8ad0cfb8c022e49d103d487d4cf7a23d57077dd9d726e316730a",
         )
-        self.FTSOprocessor = FtsoProcessor(ProtocolProvider(protocol_id=100, client_configs=[]))
+        self.FTSOprocessor = FtsoProcessor(ProtocolConfig(protocol_id=100, providers=[]))
 
         with open("ftso/test/testing_data.json") as json_data:
             data = json.load(json_data)

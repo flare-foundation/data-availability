@@ -40,19 +40,19 @@ class FspViewSet(viewsets.GenericViewSet):
             "latest_fdc": {"voting_round_id": -1, "start_timestamp": -1},
         }
 
-        if config.ftso_provider is not None:
+        if config.ftso is not None:
             # NOTE: for this to work saving to DB must be atomic
             latest_ftso = (
-                ProtocolMessageRelayed.objects.filter(protocol_id=config.ftso_provider.protocol_id)
+                ProtocolMessageRelayed.objects.filter(protocol_id=config.ftso.protocol_id)
                 .order_by("-voting_round_id")
                 .first()
             )
         else:
             latest_ftso = None
 
-        if config.fdc_provider is not None:
+        if config.fdc is not None:
             latest_fdc = (
-                ProtocolMessageRelayed.objects.filter(protocol_id=config.fdc_provider.protocol_id)
+                ProtocolMessageRelayed.objects.filter(protocol_id=config.fdc.protocol_id)
                 .order_by("-voting_round_id")
                 .first()
             )

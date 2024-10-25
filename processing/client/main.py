@@ -1,37 +1,31 @@
 import logging
 
 import cattrs
-from attr import frozen
 from requests import Session
 
+from configuration.types import ProtocolProvider
 from processing.client.types import FdcDataResponse, FtsoDataResponse
 
 logger = logging.getLogger(__name__)
 
 
-@frozen
-class BaseClientConfig:
-    url: str
-    api_key: str
-    logging_name: str
-
-
 class _BaseClient:
     status_keyword = "status"
 
-    def __init__(self, url: str, api_key: str, logging_name: str):
+    def __init__(self, url: str, api_key: str | None, logging_name: str):
         session = Session()
-        session.headers.update({"X-API-KEY": api_key})
+        if api_key is not None:
+            session.headers.update({"X-API-KEY": api_key})
         self.session = session
         self.url = url
         self.logging_name = logging_name
 
     @classmethod
-    def from_config(cls, config: BaseClientConfig):
-        return cls(config.url, config.api_key, config.logging_name)
+    def from_config(cls, config: ProtocolProvider):
+        return cls(config.url, config.api_key, config.name)
 
     def __str__(self) -> str:
-        return f"Client at {self.logging_name}"
+        return f"Client <{self.logging_name}>"
 
     def _get(self, endpoint: str):
         return self.session.get(self.url + endpoint, timeout=20)

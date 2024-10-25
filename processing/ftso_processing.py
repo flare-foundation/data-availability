@@ -3,7 +3,7 @@ import logging
 from django.db import transaction
 from sentry_sdk import capture_message
 
-from configuration.types import ProtocolProvider
+from configuration.types import ProtocolConfig
 from fsp.models import ProtocolMessageRelayed
 from ftso.models import FeedResult, RandomResult
 from processing.client.main import FtsoClient
@@ -45,9 +45,9 @@ def process_single_provider(root: ProtocolMessageRelayed, client: FtsoClient):
 
 
 class FtsoProcessor:
-    def __init__(self, config: ProtocolProvider):
+    def __init__(self, config: ProtocolConfig):
         self.protocol_id = config.protocol_id
-        self.providers = [FtsoClient.from_config(conf) for conf in config.client_configs]
+        self.providers = [FtsoClient.from_config(conf) for conf in config.providers]
 
     def fetch_ftso_merkle_tree(self, root: ProtocolMessageRelayed):
         if root.protocol_id != self.protocol_id:
