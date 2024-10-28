@@ -2,12 +2,12 @@ import logging
 from typing import cast
 
 from django.db import transaction
+from py_flare_common.merkle import MerkleTree
 
 from configuration.types import ProtocolConfig
 from fdc.models import AttestationResult
 from fsp.models import ProtocolMessageRelayed
 from processing.client.main import BaseClient, FdcClient
-from processing.merkle_tree import MerkleTree
 from processing.processing import Processor
 from processing.utils import un_prefix_0x
 

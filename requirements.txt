@@ -13,6 +13,9 @@ djangorestframework-types==0.8.0
 djangorestframework==3.15.1
 drf-spectacular==0.27.2
 
+# flare library
+py-flare-common==0.0.1
+
 # web3
 web3==6.19.0
 

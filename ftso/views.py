@@ -1,4 +1,5 @@
 from drf_spectacular.utils import extend_schema
+from py_flare_common.merkle import MerkleTree
 from rest_framework import decorators, response, status, viewsets
 
 from ftso.models import FeedResult, RandomResult
@@ -13,7 +14,6 @@ from ftso.serializers.query import (
 from ftso.serializers.request import (
     FeedResultFeedsWithProofsRequestSerializer,
 )
-from processing.merkle_tree import MerkleTree
 from processing.utils import un_prefix_0x
 
 
