@@ -3,6 +3,7 @@ from typing import cast
 
 from django.db import transaction
 
+from configuration.types import ProtocolConfig
 from fsp.models import ProtocolMessageRelayed
 from ftso.models import FeedResult, RandomResult
 from processing.client.main import BaseClient, FtsoClient
@@ -14,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class FtsoProcessor(Processor):
-    providers: list[FtsoClient]
+    def _init_get_providers(self, config: ProtocolConfig):
+        return [FtsoClient.from_config(conf) for conf in config.providers]
 
     def process_single_provider(self, root: ProtocolMessageRelayed, client: BaseClient):
         client = cast(FtsoClient, client)

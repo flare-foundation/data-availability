@@ -3,6 +3,7 @@ from typing import cast
 
 from django.db import transaction
 
+from configuration.types import ProtocolConfig
 from fdc.models import AttestationResult
 from fsp.models import ProtocolMessageRelayed
 from processing.client.main import BaseClient, FdcClient
@@ -14,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class FdcProcessor(Processor):
+    def _init_get_providers(self, config: ProtocolConfig):
+        return [FdcClient.from_config(conf) for conf in config.providers]
+
     def process_single_provider(self, root: ProtocolMessageRelayed, client: BaseClient):
         client = cast(FdcClient, client)
         parsed_response = client.get_data(root.voting_round_id)

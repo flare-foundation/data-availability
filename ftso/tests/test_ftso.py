@@ -9,7 +9,7 @@ from fsp.models import ProtocolMessageRelayed
 from ftso.models import FeedResult, RandomResult
 from processing.client.main import FtsoClient
 from processing.client.types import FtsoDataResponse, FtsoRandomResponse, FtsoVotingResponse
-from processing.ftso_processing import FtsoProcessor, process_single_provider
+from processing.ftso_processing import FtsoProcessor
 
 # DISABLE LOGGING
 logging.disable(logging.CRITICAL)
@@ -72,7 +72,7 @@ class FtsoProcessorTest(TestCase):
         with patch("processing.client.main.FtsoClient._get", return_value=response):
             self.parsed_response = self.FTSOclient.get_data(0)
         with patch("processing.client.main.FtsoClient.get_data", return_value=self.parsed_response):
-            processed_data = process_single_provider(self.root, self.FTSOclient)
+            processed_data = self.FTSOprocessor.process_single_provider(self.root, self.FTSOclient)
         assert processed_data is not None
         self.rand, self.res = processed_data
 
@@ -94,9 +94,7 @@ class FtsoProcessorTest(TestCase):
         self.assertEqual(res.decimals, 4)
 
     def test_process(self):
-        with patch(
-            "processing.ftso_processing.FtsoProcessor.fetch_ftso_merkle_tree", return_value=(self.rand, self.res)
-        ):
+        with patch("processing.ftso_processing.FtsoProcessor.fetch_merkle_tree", return_value=(self.rand, self.res)):
             self.FTSOprocessor.process(self.root)
 
         self.assertEqual(RandomResult.objects.count(), 1)

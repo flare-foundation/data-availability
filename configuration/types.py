@@ -74,11 +74,11 @@ def parse_protocol_providers(protocol_prefix: str) -> list[ProtocolProvider]:
     provider_urls = e.get(f"{protocol_prefix}_PROVIDER_URLS")
     provider_keys = e.get(f"{protocol_prefix}_PROVIDER_API_KEYS")
 
-    providers = zip((provider_names, provider_urls, provider_keys), ("names", "urls", "keys"))
+    providers = (provider_names, provider_urls, provider_keys)
 
     valid_config = True
-    for provider, value in providers:
-        if value is not None:
+    for provider in providers:
+        if provider is not None:
             continue
         valid_config = False
         logger.debug(f"{protocol_prefix} {provider} are not set.")

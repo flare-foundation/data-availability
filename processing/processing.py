@@ -1,4 +1,5 @@
 import logging
+from typing import Sequence
 
 from sentry_sdk import capture_message
 
@@ -10,7 +11,10 @@ from processing.client.main import BaseClient
 class Processor:
     def __init__(self, config: ProtocolConfig):
         self.protocol_id = config.protocol_id
-        self.providers = [BaseClient.from_config(conf) for conf in config.providers]
+        self.providers = self._init_get_providers(config)
+
+    def _init_get_providers(self, config: ProtocolConfig) -> Sequence[BaseClient]:
+        return [BaseClient.from_config(conf) for conf in config.providers]
 
     def fetch_merkle_tree(self, root: ProtocolMessageRelayed):
         if root.protocol_id != self.protocol_id:

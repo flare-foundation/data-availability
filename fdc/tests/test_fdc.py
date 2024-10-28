@@ -9,7 +9,7 @@ from fdc.models import AttestationResult
 from fsp.models import ProtocolMessageRelayed
 from processing.client.main import FdcClient
 from processing.client.types import FdcAttestationResponse, FdcDataResponse
-from processing.fdc_processing import FdcProcessor, process_single_fdc_provider
+from processing.fdc_processing import FdcProcessor
 
 # DISABLE LOGGING
 logging.disable(logging.CRITICAL)
@@ -79,7 +79,7 @@ class FdcProcessorTest(TestCase):
         with patch("processing.client.main.FdcClient._get", return_value=response):
             self.parsed_response = self.FDCclient.get_data(0)
         with patch("processing.client.main.FdcClient.get_data", return_value=self.parsed_response):
-            self.leafs = process_single_fdc_provider(self.root, self.FDCclient)
+            self.leafs = self.FDCprocessor.process_single_provider(self.root, self.FDCclient)
 
     def test_process_single_fdc_provider(self):
         assert self.leafs is not None
@@ -109,7 +109,7 @@ class FdcProcessorTest(TestCase):
         )
 
     def test_process(self):
-        with patch("processing.fdc_processing.FdcProcessor.fetch_fdc_merkle_tree", return_value=self.leafs):
+        with patch("processing.fdc_processing.FdcProcessor.fetch_merkle_tree", return_value=self.leafs):
             self.FDCprocessor.process(self.root)
 
         self.assertEqual(AttestationResult.objects.count(), 14)

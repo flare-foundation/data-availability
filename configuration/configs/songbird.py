@@ -37,7 +37,7 @@ def get_config() -> Configuration:
     )
 
     starting_config = SyncingConfig(
-        start_height=int(e.get("START_HEIGHT", "58653823")),
+        start_height=int(e.get("START_HEIGHT", "73422149")),
         max_processing_block_batch=50,
         processing_sleep_cycle=5,
     )
