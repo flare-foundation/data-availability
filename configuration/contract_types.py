@@ -11,7 +11,8 @@ from processing.utils import un_prefix_0x
 
 
 def abi_from_file_location(file_location):
-    return json.load(open(file_location))["abi"]
+    with open(file_location) as f:
+        return json.load(f)["abi"]
 
 
 def event_signature(event_abi: ABIEvent) -> str:
@@ -96,7 +97,7 @@ class Contracts:
     Relay: Contract
 
     @classmethod
-    def default(cls) -> Self:
+    def from_json(cls) -> Self:
         attr_names = [a.name for a in cls.__attrs_attrs__]  # type: ignore
         with open(f"configuration/chain/{settings.CONFIG_MODULE}/contracts.json") as f:
             contracts = {c["name"]: c["address"] for c in json.load(f)}
@@ -111,5 +112,8 @@ class Contracts:
                         contracts[name],
                         f"configuration/chain/{settings.CONFIG_MODULE}/artifacts/{name}.json",
                     )
+
+            if None in kwargs.values():
+                raise ValueError()
 
             return cls(**kwargs)
