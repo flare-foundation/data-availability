@@ -1,6 +1,6 @@
 import logging
-import queue
 import time
+from collections import deque
 
 from attr import frozen
 from django.db.models.aggregates import Max
@@ -51,7 +51,10 @@ class DataProcessor:
             height = self.w3.eth.get_block_number()
             logger.info(f"Latest processed/current Height: {latest_processed_height} | {height}")
 
-            processing_qeue = queue.Queue()
+            if height == latest_processed_height:
+                time.sleep(self.processing_sleep_cycle)
+
+            processing_qeue = deque()
             while latest_processed_height < height:
                 from_block_exc = latest_processed_height
                 to_block_inc = min(latest_processed_height + self.max_processing_block_batch, height)
@@ -79,19 +82,23 @@ class DataProcessor:
                         logger.debug(f"Processing round {ev}")
                         protocol_config.processor.process(ev)
                     except Exception as e:
-                        processing_qeue.put(ev)
+                        processing_qeue.append((ev, 1, time.time()))
                         capture_exception(e)
-                        logger.error(f"Round processing failed for round {ev}")
                         # raise e
 
             # Retry to process failed events one more time
-            while not processing_qeue.empty():
-                ev = processing_qeue.get()
-                try:
-                    logger.debug(f"Processing round {ev}")
-                    protocol_config.processor.process(ev)
-                except Exception as e:
-                    capture_exception(e)
-                    logger.error(f"Round processing failed for round {ev}")
-
-            time.sleep(self.processing_sleep_cycle)
+            while not processing_qeue:
+                ev, i, t = processing_qeue.popleft()
+                if time.time() - t > 20:
+                    try:
+                        logger.debug(f"Processing round {ev}")
+                        protocol_config.processor.process(ev)
+                    except Exception as e:
+                        capture_exception(e)
+                        if i < 5:
+                            processing_qeue.append((ev, i + 1, time.time()))
+                        else:
+                            logger.error(f"Round processing failed for round {ev}")
+                else:
+                    processing_qeue.appendleft((ev, i, t))
+                    break
