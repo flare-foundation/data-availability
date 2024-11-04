@@ -38,9 +38,7 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
         self.serializer_class = AttestationMinimalProofSerializer
 
         _body = AttestationTypeGetByRoundIdBytesRequest(data=self.request.data)
-        print("HERE")
         _body.is_valid(raise_exception=True)
-        print("HERE2")
         body = _body.validated_data
 
         obj = self.get_queryset().get(

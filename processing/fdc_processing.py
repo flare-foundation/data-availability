@@ -27,12 +27,8 @@ class FdcProcessor(Processor):
         merkle_tree = MerkleTree([leaf.hash.hex() for leaf in leafs])
 
         if merkle_tree.root and un_prefix_0x(merkle_tree.root.lower()) != root.merkle_root:
-            logging.error(
-                "Merkle roots mismatch (FDC) (chain and calculated) (round: %s) %s: \nChain      : %s \nCalculated : %s",
-                root.voting_round_id,
-                client,
-                root.merkle_root,
-                merkle_tree.root,
+            logger.error(
+                f"Merkle roots mismatch (FDC) (chain and calculated) (round: {root.voting_round_id}) {client}: \nChain : {root.merkle_root} \nCalculated : {merkle_tree.root}"
             )
             return None
 

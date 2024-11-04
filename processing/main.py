@@ -26,7 +26,6 @@ class DataProcessor:
     RELAY_EVENT_NAME = "ProtocolMessageRelayed"
 
     def __init__(self, rpc_url: str, sync_config: SyncingConfig, relay: Contract):
-        relay = relay
         assert relay is not None and relay.address is not None
 
         self.relay_contract = relay
@@ -65,7 +64,7 @@ class DataProcessor:
                 )
                 latest_processed_height = to_block_inc
 
-                print(f"Processing from {from_block_exc} to {to_block_inc}, found {len(events)} events")
+                logger.debug(f"Processing from {from_block_exc} to {to_block_inc}, found {len(events)} events")
                 for event in events:
                     signature = un_prefix_0x(event["topics"][0].hex()).lower()
                     if signature not in EVENT_SIGNATURE:

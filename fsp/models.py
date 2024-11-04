@@ -1,3 +1,5 @@
+import logging
+
 from django.db import models
 from sentry_sdk import capture_exception
 from web3 import Web3
@@ -8,6 +10,8 @@ from web3.types import EventData, LogReceipt
 
 from configuration.contract_types import Event
 from processing.utils import un_prefix_0x
+
+logger = logging.getLogger(__name__)
 
 
 def event_data_extract_args(event_data: EventData, *args: str):
@@ -64,5 +68,5 @@ class ProtocolMessageRelayed(models.Model):
             return cls.from_decoded_dict(ev, state)
         except Exception as e:
             capture_exception(e)
-            print(f"Failed to process event {cls.EVENT_NAME}")
+            logger.error(f"Failed to process event {cls.EVENT_NAME}")
             raise e

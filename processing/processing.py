@@ -7,6 +7,8 @@ from configuration.types import ProtocolConfig
 from fsp.models import ProtocolMessageRelayed
 from processing.client.main import BaseClient
 
+logger = logging.getLogger(__name__)
+
 
 class Processor:
     def __init__(self, config: ProtocolConfig):
@@ -18,12 +20,7 @@ class Processor:
 
     def fetch_merkle_tree(self, root: ProtocolMessageRelayed):
         if root.protocol_id != self.protocol_id:
-            logging.error(
-                "Protocol ID mismatch %s: \nExpected: %s \nReceived: %s",
-                self,
-                self.protocol_id,
-                root.protocol_id,
-            )
+            logger.error(f"Protocol ID mismatch: \nExpected : {self.protocol_id} \nReceived : {root.protocol_id}")
             return None
 
         for client in self.providers:
@@ -33,16 +30,11 @@ class Processor:
                     continue
                 return data
             except Exception as e:
-                logging.error("Error fetching data from provider %s: %s", client, e)
+                logger.error(f"Error fetching data from provider {client}: {e}")
                 continue
-        # TODO: sentry check it can process logging.error
-        capture_message(
-            f"Unable to fetch data from any provider for voting round {root.voting_round_id}",
-        )
-        logging.error(
-            "Unable to fetch data from any provider for voting round %s",
-            root.voting_round_id,
-        )
+        # TODO: sentry check it can process logger.error
+        capture_message(f"Unable to fetch data from any provider for voting round {root.voting_round_id}")
+        logger.error(f"Unable to fetch data from any provider for voting round {root.voting_round_id}")
         return None
 
     def process_single_provider(self, root: ProtocolMessageRelayed, client: BaseClient):

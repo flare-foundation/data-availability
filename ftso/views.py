@@ -1,3 +1,5 @@
+import logging
+
 from drf_spectacular.utils import extend_schema
 from py_flare_common.merkle import MerkleTree
 from rest_framework import decorators, response, status, viewsets
@@ -15,6 +17,8 @@ from ftso.serializers.request import (
     FeedResultFeedsWithProofsRequestSerializer,
 )
 from processing.utils import un_prefix_0x
+
+logger = logging.getLogger(__name__)
 
 
 # TODO:(matej) rename endpoints and response type names
@@ -38,8 +42,7 @@ class FeedResultViewSet(viewsets.GenericViewSet):
         if voting_round_id is None:
             return response.Response(None, status=status.HTTP_404_NOT_FOUND)
 
-        # TODO:(matej) logging
-        print(f"Querying for available feeds for round: {voting_round_id}")
+        logger.debug(f"Querying for available feeds for round: {voting_round_id}")
 
         queryset = self.get_queryset().filter(voting_round_id=voting_round_id)
         serializer = self.get_serializer(queryset, many=True)
@@ -101,7 +104,7 @@ def get_requested_round_id(query_voting_round_id: int | None) -> int | None:
     if query_voting_round_id > latest_round.voting_round_id:
         # Querying for a round that does not exist (ie is not indexed yet)
         # TODO:(luka) We can handle this differently
-        print("Querying for a round that does not yet exist")
+        logger.debug("Querying for a round that does not yet exist")
         query_voting_round_id = latest_round.voting_round_id
     return query_voting_round_id
 
