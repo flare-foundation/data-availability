@@ -97,23 +97,26 @@ class Contracts:
     Relay: Contract
 
     @classmethod
-    def from_json(cls) -> Self:
+    def from_json(cls, relative_path) -> Self:
         attr_names = [a.name for a in cls.__attrs_attrs__]  # type: ignore
-        with open(f"configuration/chain/{settings.CONFIG_MODULE}/contracts.json") as f:
+        with open(relative_path) as f:
             contracts = {c["name"]: c["address"] for c in json.load(f)}
 
+            errors = []
             kwargs = {}
 
             for name in attr_names:
-                kwargs[name] = None
-                if name in contracts:
-                    kwargs[name] = Contract(
-                        name,
-                        contracts[name],
-                        f"configuration/chain/{settings.CONFIG_MODULE}/artifacts/{name}.json",
-                    )
+                if name not in contracts:
+                    errors.append(ValueError(f"Contract '{name}' does not exist in '{settings.CONFIG_MODULE}'"))
+                    continue
 
-            if None in kwargs.values():
-                raise ValueError()
+                kwargs[name] = Contract(
+                    name,
+                    contracts[name],
+                    f"configuration/chain/{settings.CONFIG_MODULE}/artifacts/{name}.json",
+                )
+
+            if errors:
+                raise ValueError(errors)
 
             return cls(**kwargs)

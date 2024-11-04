@@ -24,7 +24,7 @@ def get_config() -> Configuration:
         first_v2_reward_epoch=223,
     )
 
-    contracts = Contracts.from_json()
+    contracts = Contracts.from_json(f"configuration/chain/{CHAIN}/contracts.json")
 
     ftso_provider = ProtocolConfig(
         protocol_id=100,
