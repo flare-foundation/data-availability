@@ -53,6 +53,7 @@ class DataProcessor:
 
             if height == latest_processed_height:
                 time.sleep(self.processing_sleep_cycle)
+                continue
 
             processing_qeue = deque()
             while latest_processed_height < height:
@@ -86,19 +87,19 @@ class DataProcessor:
                         capture_exception(e)
                         # raise e
 
-            # Retry to process failed events one more time
+            # Retry to process failed events
             while not processing_qeue:
                 ev, i, t = processing_qeue.popleft()
-                if time.time() - t > 20:
-                    try:
-                        logger.debug(f"Processing round {ev}")
-                        protocol_config.processor.process(ev)
-                    except Exception as e:
-                        capture_exception(e)
-                        if i < 5:
-                            processing_qeue.append((ev, i + 1, time.time()))
-                        else:
-                            logger.error(f"Round processing failed for round {ev}")
-                else:
+                if time.time() - t <= 20:
+                    # the left most event has the smallest t in the processing_qeue
                     processing_qeue.appendleft((ev, i, t))
                     break
+                try:
+                    logger.debug(f"Processing round {ev}")
+                    protocol_config.processor.process(ev)
+                except Exception as e:
+                    capture_exception(e)
+                    if i < 5:
+                        processing_qeue.append((ev, i + 1, time.time()))
+                    else:
+                        logger.error(f"Round processing failed for round {ev}")
