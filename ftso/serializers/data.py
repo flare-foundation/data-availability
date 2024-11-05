@@ -38,5 +38,5 @@ class FeedValueStructSerializer(serializers.ModelSerializer):
 
 
 class MerkleProofValueSerializer(serializers.Serializer):
-    data = FeedValueStructSerializer()
+    body = FeedValueStructSerializer()
     proof = serializers.ListField(child=serializers.CharField())

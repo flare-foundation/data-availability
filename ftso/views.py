@@ -21,7 +21,6 @@ from processing.utils import un_prefix_0x
 logger = logging.getLogger(__name__)
 
 
-# TODO:(matej) rename endpoints and response type names
 class FeedResultViewSet(viewsets.GenericViewSet):
     def get_queryset(self):
         return FeedResult.objects.all()
@@ -47,7 +46,6 @@ class FeedResultViewSet(viewsets.GenericViewSet):
         queryset = self.get_queryset().filter(voting_round_id=voting_round_id)
         serializer = self.get_serializer(queryset, many=True)
 
-        # TODO:(luka) Should we validate?
         return response.Response(serializer.data)
 
     @extend_schema(
@@ -79,15 +77,15 @@ class FeedResultViewSet(viewsets.GenericViewSet):
             return response.Response(None, status=status.HTTP_404_NOT_FOUND)
 
         tree = get_merkle_tree_for_round(voting_round_id)
-        instance = [
+        data = [
             {
-                "data": el,
+                "body": el,
                 "proof": tree.get_proof(el.hash.hex()),
             }
             for el in queryset
         ]
 
-        serializer = self.get_serializer(instance, many=True)
+        serializer = self.get_serializer(data, many=True)
         return response.Response(serializer.data)
 
 
