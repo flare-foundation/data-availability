@@ -33,7 +33,7 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
         request=AttestationTypeGetByRoundIdBytesRequest,
         responses=AttestationMinimalProofSerializer,
     )
-    @decorators.action(detail=False, methods=["post"])
+    @decorators.action(detail=False, methods=["post"], url_path="get-proof-round-id-bytes")
     def get_proof_round_id_bytes(self, request, *args, **kwargs):
         self.serializer_class = AttestationMinimalProofSerializer
 
