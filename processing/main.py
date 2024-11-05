@@ -55,7 +55,7 @@ class DataProcessor:
                 time.sleep(self.processing_sleep_cycle)
                 continue
 
-            processing_qeue = deque()
+            processing_queue = deque()
             while latest_processed_height < height:
                 from_block_exc = latest_processed_height
                 to_block_inc = min(latest_processed_height + self.max_processing_block_batch, height)
@@ -83,16 +83,16 @@ class DataProcessor:
                         logger.debug(f"Processing round {ev}")
                         protocol_config.processor.process(ev)
                     except Exception as e:
-                        processing_qeue.append((ev, 1, time.time()))
+                        processing_queue.append((ev, 1, time.time()))
                         capture_exception(e)
                         # raise e
 
             # Retry to process failed events
-            while not processing_qeue:
-                ev, i, t = processing_qeue.popleft()
+            while not processing_queue:
+                ev, i, t = processing_queue.popleft()
                 if time.time() - t <= 20:
-                    # the left most event has the smallest t in the processing_qeue
-                    processing_qeue.appendleft((ev, i, t))
+                    # the left most event has the smallest t in the processing_queue
+                    processing_queue.appendleft((ev, i, t))
                     break
                 try:
                     logger.debug(f"Processing round {ev}")
@@ -100,6 +100,6 @@ class DataProcessor:
                 except Exception as e:
                     capture_exception(e)
                     if i < 5:
-                        processing_qeue.append((ev, i + 1, time.time()))
+                        processing_queue.append((ev, i + 1, time.time()))
                     else:
                         logger.error(f"Round processing failed for round {ev}")
