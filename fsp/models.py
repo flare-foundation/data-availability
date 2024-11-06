@@ -41,7 +41,7 @@ class ProtocolMessageRelayed(models.Model):
         return f"{self.protocol_id} - {self.voting_round_id} - {self.merkle_root}"
 
     @classmethod
-    def from_decoded_dict(cls, event_data: EventData, state):
+    def from_decoded_dict(cls, event_data: EventData):
         (
             _protocol_id,
             _voting_round_id,
@@ -62,10 +62,10 @@ class ProtocolMessageRelayed(models.Model):
         )
 
     @classmethod
-    def process_event(cls, log_receipt: LogReceipt, event: Event, w3: Web3, state) -> "ProtocolMessageRelayed":
+    def process_event(cls, log_receipt: LogReceipt, event: Event, w3: Web3) -> "ProtocolMessageRelayed":
         try:
             ev = get_event_data(w3.codec, event.abi, log_receipt)
-            return cls.from_decoded_dict(ev, state)
+            return cls.from_decoded_dict(ev)
         except Exception as e:
             capture_exception(e)
             logger.error(f"Failed to process event {cls.EVENT_NAME}")

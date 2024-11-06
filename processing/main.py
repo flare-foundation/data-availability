@@ -74,7 +74,7 @@ class DataProcessor:
                     if signature not in EVENT_SIGNATURE:
                         continue
                     logger.debug("Processing event")
-                    ev = ProtocolMessageRelayed.process_event(event, RELAY_EVENT, self.w3, {})
+                    ev = ProtocolMessageRelayed.process_event(event, RELAY_EVENT, self.w3)
                     if ev is None:
                         continue
                     if ev.protocol_id != protocol_config.protocol_id:
