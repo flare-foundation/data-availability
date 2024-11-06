@@ -19,7 +19,6 @@ from django.urls import include, path
 from drf_spectacular.utils import extend_schema, inline_serializer
 from drf_spectacular.views import (
     SpectacularAPIView,
-    SpectacularRedocView,
     SpectacularSwaggerView,
 )
 from rest_framework import decorators, response, serializers, status
@@ -38,16 +37,11 @@ def health(request):
 
 urlpatterns = [
     # drf-spectacular schema and ui endpoints
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("_api_schema", SpectacularAPIView.as_view(), name="schema"),
     path(
-        "api/schema/swagger-ui/",
+        "api-doc",
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
-    ),
-    path(
-        "api/schema/redoc/",
-        SpectacularRedocView.as_view(url_name="schema"),
-        name="redoc",
     ),
     path("api/health", health),
 ]
