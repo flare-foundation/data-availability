@@ -88,7 +88,7 @@ class DataProcessor:
                         # raise e
 
             # Retry to process failed events
-            while not processing_queue:
+            while processing_queue:
                 ev, i, t = processing_queue.popleft()
                 if time.time() - t <= 20:
                     # the left most event has the smallest t in the processing_queue
