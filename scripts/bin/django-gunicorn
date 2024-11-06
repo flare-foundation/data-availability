@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+python manage.py migrate
+
+exec gunicorn \
+	-w 2 \
+	-k gthread \
+	-b 0.0.0.0:8000 \
+	project.wsgi:application

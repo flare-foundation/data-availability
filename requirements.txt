@@ -29,5 +29,5 @@ django-prometheus==2.3.1
 attrs==24.2.0
 cattrs==24.1.2
 
-# uwsgi
-uWSGI==2.0.26
+# wsgi
+gunicorn==23.0.0

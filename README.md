@@ -32,44 +32,59 @@ Create a `.env` file from `.env.exampl.prod` and complete it with the necessary 
 You can then run the whole project with below example `docker-compose.yaml`.
 
 ```yaml
+x-django: &django
+  image: local/data-availability
+  env_file:
+    - .env
+  restart: unless-stopped
+
 services:
-  postgresdb:
+  db:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "127.0.0.1:${DB_PROXY_PORT}:5432"
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
-      - ./db-data/:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
 
-  appserver:
-    image: ${DOCKER_IMAGE_URL}
-    env_file:
-      - .env
+  django:
+    <<: *django
     ports:
-      - "127.0.0.1:${SERVER_PROXY_PORT}:3030"
+      - "127.0.0.1:${SERVER_PROXY_PORT}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
-      - postgresdb
-    restart: unless-stopped
+      db:
+        condition: service_healthy
 
   process-ftso-data:
-    image: ${DOCKER_IMAGE_URL}
-    command: start-process_ftso_data
-    env_file:
-      - .env
+    <<: *django
+    command: python manage.py process_ftso_data
     depends_on:
-      - postgresdb
-    restart: unless-stopped
+      db:
+        condition: service_healthy
+      django:
+        condition: service_healthy
 
   process-fdc-data:
-    image: ${DOCKER_IMAGE_URL}
-    command: start-process_fdc_data
-    env_file:
-      - .env
+    <<: *django
+    command: python manage.py process_fdc_data
     depends_on:
-      - postgresdb
-    restart: unless-stopped
+      db:
+        condition: service_healthy
+      django:
+        condition: service_healthy
+
+volumes:
+  pg_data:
 ```

@@ -10,4 +10,4 @@ EXPOSE 8000
 
 ENV PATH="/app/scripts/bin:${PATH}"
 
-CMD ["django-uwsgi"]
+CMD ["django-gunicorn"]
