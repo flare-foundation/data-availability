@@ -33,20 +33,14 @@ class FdcProcessor(Processor):
             merkle_tree.root
             and un_prefix_0x(merkle_tree.root.lower()) != root.merkle_root
         ):
-            logger.error(
-                f"Merkle roots mismatch (FDC) (chain and calculated) (round: {root.voting_round_id}) {client}: \nChain : {root.merkle_root} \nCalculated : {merkle_tree.root}"
+            raise ValueError(
+                f"Root mismatch [chain:{root.merkle_root}] [calculated:{merkle_tree.root}]"
             )
-            return None
 
         return leafs
 
     def process(self, root: ProtocolMessageRelayed):
         data = self.fetch_merkle_tree(root)
-        if data is None:
-            return None
         with transaction.atomic():
             ProtocolMessageRelayed.objects.bulk_create([root])
             AttestationResult.objects.bulk_create(data)
-            logger.info(
-                f"Processed {len(data)} FDC attestations for voting round {root.voting_round_id}"
-            )

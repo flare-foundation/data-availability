@@ -1,8 +1,6 @@
 import logging
 from typing import Sequence
 
-from sentry_sdk import capture_message
-
 from configuration.types import ProtocolConfig
 from fsp.models import ProtocolMessageRelayed
 from processing.client.main import BaseClient
@@ -19,29 +17,27 @@ class Processor:
         return [BaseClient.from_config(conf) for conf in config.providers]
 
     def fetch_merkle_tree(self, root: ProtocolMessageRelayed):
-        if root.protocol_id != self.protocol_id:
-            logger.error(
-                f"Protocol ID mismatch: \nExpected : {self.protocol_id} \nReceived : {root.protocol_id}"
-            )
-            return None
+        assert (
+            root.protocol_id == self.protocol_id
+        ), f"{self.protocol_id=} should match {root.protocol_id=}"
+
+        errors = []
 
         for client in self.providers:
             try:
                 data = self.process_single_provider(root, client)
-                if data is None:
-                    continue
-                return data
             except Exception as e:
-                logger.error(f"Error fetching data from provider {client}: {e}")
+                logger.warning(
+                    f"Error while fetching [P:{client.logging_name}]"
+                    f"[VR:{root.voting_round_id}] - {e}"
+                )
+                errors.append(e)
                 continue
-        # TODO: sentry check it can process logger.error
-        capture_message(
-            f"Unable to fetch data from any provider for voting round {root.voting_round_id}"
+            return data
+        raise ValueError(
+            f"Error while fetching [VR:{root.voting_round_id}] from all providers",
+            errors,
         )
-        logger.error(
-            f"Unable to fetch data from any provider for voting round {root.voting_round_id}"
-        )
-        return None
 
     def process_single_provider(self, root: ProtocolMessageRelayed, client: BaseClient):
         raise NotImplementedError("Subclasses must implement this method")

@@ -24,10 +24,9 @@ class FtsoProcessor(Processor):
         provider_root = un_prefix_0x(parsed_response.merkleRoot.lower())
 
         if provider_root != root.merkle_root:
-            logger.error(
-                f"Merkle roots mismatch (provider and chain) (round: {root.voting_round_id}) {client}: \nProvider : {provider_root} \nFinalized : {root.merkle_root}"
+            raise ValueError(
+                f"Root mismatch [provider:{provider_root}] [chain:{root.merkle_root}]"
             )
-            return None
 
         rand = [RandomResult.from_decoded_dict(parsed_response.random)]
         res = [FeedResult.from_decoded_dict(leaf) for leaf in parsed_response.medians]
@@ -36,22 +35,16 @@ class FtsoProcessor(Processor):
         )
 
         if merkle_tree.root and un_prefix_0x(merkle_tree.root.lower()) != provider_root:
-            logger.error(
-                f"Merkle roots mismatch (provider and calculated) (round: {root.voting_round_id}) {client}: \nCalculated : {merkle_tree.root} \nFrom provider : {provider_root}"
+            raise ValueError(
+                f"Root mismatch [provider:{provider_root}] [calculated:{merkle_tree.root}]"
             )
-            return None
 
         return rand, res
 
     def process(self, root: ProtocolMessageRelayed):
         data = self.fetch_merkle_tree(root)
-        if data is None:
-            return None
         rand, res = data
         with transaction.atomic():
             ProtocolMessageRelayed.objects.bulk_create([root])
             RandomResult.objects.bulk_create(rand)
             FeedResult.objects.bulk_create(res)
-            logger.info(
-                f"Processed round {root.voting_round_id} and saved FTSO data to DB"
-            )

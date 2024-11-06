@@ -45,69 +45,83 @@ class DataProcessor:
             protocol_id=protocol_config.protocol_id,
         ).aggregate(m=Max("block"))["m"]
 
-        latest_processed_height = db_processed_height or self.default_start_height
+        start = db_processed_height or (self.default_start_height - 1)
+
+        logger.info(
+            f"Processing started for protocol [id:{protocol_config.protocol_id}]."
+        )
+        providers_string = ", ".join(
+            [f"{p.logging_name} - {p.url}" for p in protocol_config.processor.providers]
+        )
+        logger.info(f"Using providers {providers_string}.")
+        logger.info(f"Starting processing from block {start}.")
+
+        processing_queue: deque[tuple[ProtocolMessageRelayed, int, float]] = deque()
 
         while True:
             height = self.w3.eth.get_block_number()
-            logger.info(
-                f"Latest processed/current Height: {latest_processed_height} | {height}"
-            )
 
-            if height == latest_processed_height:
+            if height == start:
                 time.sleep(self.processing_sleep_cycle)
                 continue
 
-            processing_queue = deque()
-            while latest_processed_height < height:
-                from_block_exc = latest_processed_height
-                to_block_inc = min(
-                    latest_processed_height + self.max_processing_block_batch, height
-                )
+            while start < height:
+                index_range = min(self.max_processing_block_batch, height - start)
+                logger.debug(f"Processing blocks [{start}-{start + index_range}]")
+
                 events = self.w3.eth.get_logs(
                     {
-                        "fromBlock": from_block_exc + 1,
-                        "toBlock": to_block_inc,
+                        "fromBlock": start,
+                        # to block is including in this function
+                        "toBlock": start + index_range - 1,
                         "address": ADDRESSES,
                     }
                 )
-                latest_processed_height = to_block_inc
 
-                logger.debug(
-                    f"Processing from {from_block_exc} to {to_block_inc}, found {len(events)} events"
-                )
+                start += index_range
+
                 for event in events:
                     signature = un_prefix_0x(event["topics"][0].hex()).lower()
                     if signature not in EVENT_SIGNATURE:
                         continue
-                    logger.debug("Processing event")
+
                     ev = ProtocolMessageRelayed.process_event(
                         event, RELAY_EVENT, self.w3
                     )
-                    if ev is None:
+                    if ev is None or ev.protocol_id != protocol_config.protocol_id:
                         continue
-                    if ev.protocol_id != protocol_config.protocol_id:
-                        continue
+
                     try:
-                        logger.debug(f"Processing round {ev}")
+                        logger.debug(f"Processing event {ev}")
                         protocol_config.processor.process(ev)
-                    except Exception as e:
+                        logger.info(f"Processed event {ev}")
+
+                    except Exception:
+                        logger.warning(
+                            f"Failed to process and added to retry queue: {ev}"
+                        )
                         processing_queue.append((ev, 1, time.time()))
-                        capture_exception(e)
-                        # raise e
 
             # Retry to process failed events
             while processing_queue:
                 ev, i, t = processing_queue.popleft()
+
                 if time.time() - t <= 20:
-                    # the left most event has the smallest t in the processing_queue
+                    # the first event has the smallest t in the processing_queue
                     processing_queue.appendleft((ev, i, t))
                     break
+
                 try:
-                    logger.debug(f"Processing round {ev}")
+                    logger.debug(f"Processing event {ev}")
                     protocol_config.processor.process(ev)
+                    logger.info(f"Processed event with retry [retry:{i}] {ev}")
+
                 except Exception as e:
-                    capture_exception(e)
                     if i < 5:
                         processing_queue.append((ev, i + 1, time.time()))
                     else:
-                        logger.error(f"Round processing failed for round {ev}")
+                        capture_exception(e)
+                        logger.error(
+                            f"Failed: [vr:{ev.voting_round_id}] "
+                            f"[retry:{i}] [event:{ev}]"
+                        )
