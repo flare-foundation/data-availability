@@ -1,5 +1,5 @@
 services:
-  postgresdb:
+  db:
     container_name: ${COMPOSE_PROJECT_NAME}_db
     image: postgres:16
     environment:
@@ -20,7 +20,7 @@ services:
     # uncomment for query logging
     # command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
 
-  appserver:
+  django:
     container_name: ${COMPOSE_PROJECT_NAME}_server
     build:
       context: ../../
