@@ -33,11 +33,15 @@ class FeedResultViewSet(viewsets.GenericViewSet):
     def anchor_feed_names(self, request, *args, **kwargs):
         self.serializer_class = FeedValueNameSerializer
 
-        _query_params = FeedResultAvailableFeedsQuerySerializer(data=request.query_params)
+        _query_params = FeedResultAvailableFeedsQuerySerializer(
+            data=request.query_params
+        )
         _query_params.is_valid(raise_exception=True)
         query_params = _query_params.validated_data
 
-        voting_round_id = get_requested_round_id(query_params.get("voting_round_id", None))
+        voting_round_id = get_requested_round_id(
+            query_params.get("voting_round_id", None)
+        )
         if voting_round_id is None:
             return response.Response(None, status=status.HTTP_404_NOT_FOUND)
 
@@ -53,12 +57,16 @@ class FeedResultViewSet(viewsets.GenericViewSet):
         request=FeedResultFeedsWithProofsRequestSerializer,
         responses={200: MerkleProofValueSerializer(many=True)},
     )
-    @decorators.action(detail=False, methods=["post"], url_path="anchor-feeds-with-proof")
+    @decorators.action(
+        detail=False, methods=["post"], url_path="anchor-feeds-with-proof"
+    )
     def anchor_feeds_with_proof(self, request, *args, **kwargs):
         self.serializer_class = MerkleProofValueSerializer
 
         # TODO:(matej) validate both at the same time
-        _query_params = FeedResultFeedsWithProofsQuerySerializer(data=request.query_params)
+        _query_params = FeedResultFeedsWithProofsQuerySerializer(
+            data=request.query_params
+        )
         _query_params.is_valid(raise_exception=True)
         query_params = _query_params.validated_data
 
@@ -72,7 +80,12 @@ class FeedResultViewSet(viewsets.GenericViewSet):
 
         feed_ids = list(map(un_prefix_0x, body["feed_ids"]))
 
-        queryset = self.get_queryset().filter(voting_round_id=voting_round_id).filter(feed_id__in=feed_ids).all()
+        queryset = (
+            self.get_queryset()
+            .filter(voting_round_id=voting_round_id)
+            .filter(feed_id__in=feed_ids)
+            .all()
+        )
         if queryset is None:
             return response.Response(None, status=status.HTTP_404_NOT_FOUND)
 

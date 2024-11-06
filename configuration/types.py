@@ -20,7 +20,10 @@ class EpochSettings:
     _ATTRIBUTE_MAPPER = (
         ("firstVotingRoundStartTs", "first_voting_round_start_ts"),
         ("votingEpochDurationSeconds", "voting_epoch_duration_seconds"),
-        ("firstRewardEpochStartVotingRoundId", "first_reward_epoch_start_voting_round_id"),
+        (
+            "firstRewardEpochStartVotingRoundId",
+            "first_reward_epoch_start_voting_round_id",
+        ),
         ("rewardEpochDurationInVotingEpochs", "reward_epoch_duration_in_voting_epochs"),
     )
 
@@ -86,16 +89,24 @@ def parse_protocol_providers(protocol_prefix: str) -> list[ProtocolProvider]:
     if not valid_config:
         return []
 
-    assert provider_names is not None and provider_urls is not None and provider_keys is not None
+    assert (
+        provider_names is not None
+        and provider_urls is not None
+        and provider_keys is not None
+    )
 
     provider_names = provider_names.split(",")
     provider_urls = provider_urls.split(",")
     provider_keys = provider_keys.split(",")
 
     if len(provider_urls) != len(provider_keys) != len(provider_names):
-        raise ValueError(f"{protocol_prefix} provider names urls and keys must be of equal length (comma separated)")
+        raise ValueError(
+            f"{protocol_prefix} provider names urls and keys must be of equal length (comma separated)"
+        )
 
-    logger.debug(f"{protocol_prefix} providers ({len(provider_names)}): {provider_names}")
+    logger.debug(
+        f"{protocol_prefix} providers ({len(provider_names)}): {provider_names}"
+    )
 
     return [
         ProtocolProvider(n, u, a or None)

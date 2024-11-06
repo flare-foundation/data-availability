@@ -23,10 +23,16 @@ class FdcProcessor(Processor):
         parsed_response = client.get_data(root.voting_round_id)
 
         # Construct full merkle tree
-        leafs = [AttestationResult.from_decoded_dict(leaf) for leaf in parsed_response.Attestations]
+        leafs = [
+            AttestationResult.from_decoded_dict(leaf)
+            for leaf in parsed_response.Attestations
+        ]
         merkle_tree = MerkleTree([leaf.hash.hex() for leaf in leafs])
 
-        if merkle_tree.root and un_prefix_0x(merkle_tree.root.lower()) != root.merkle_root:
+        if (
+            merkle_tree.root
+            and un_prefix_0x(merkle_tree.root.lower()) != root.merkle_root
+        ):
             logger.error(
                 f"Merkle roots mismatch (FDC) (chain and calculated) (round: {root.voting_round_id}) {client}: \nChain : {root.merkle_root} \nCalculated : {merkle_tree.root}"
             )
@@ -41,4 +47,6 @@ class FdcProcessor(Processor):
         with transaction.atomic():
             ProtocolMessageRelayed.objects.bulk_create([root])
             AttestationResult.objects.bulk_create(data)
-            logger.info(f"Processed {len(data)} FDC attestations for voting round {root.voting_round_id}")
+            logger.info(
+                f"Processed {len(data)} FDC attestations for voting round {root.voting_round_id}"
+            )

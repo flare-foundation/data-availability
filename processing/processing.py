@@ -20,7 +20,9 @@ class Processor:
 
     def fetch_merkle_tree(self, root: ProtocolMessageRelayed):
         if root.protocol_id != self.protocol_id:
-            logger.error(f"Protocol ID mismatch: \nExpected : {self.protocol_id} \nReceived : {root.protocol_id}")
+            logger.error(
+                f"Protocol ID mismatch: \nExpected : {self.protocol_id} \nReceived : {root.protocol_id}"
+            )
             return None
 
         for client in self.providers:
@@ -33,8 +35,12 @@ class Processor:
                 logger.error(f"Error fetching data from provider {client}: {e}")
                 continue
         # TODO: sentry check it can process logger.error
-        capture_message(f"Unable to fetch data from any provider for voting round {root.voting_round_id}")
-        logger.error(f"Unable to fetch data from any provider for voting round {root.voting_round_id}")
+        capture_message(
+            f"Unable to fetch data from any provider for voting round {root.voting_round_id}"
+        )
+        logger.error(
+            f"Unable to fetch data from any provider for voting round {root.voting_round_id}"
+        )
         return None
 
     def process_single_provider(self, root: ProtocolMessageRelayed, client: BaseClient):

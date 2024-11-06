@@ -43,7 +43,9 @@ class FspViewSet(viewsets.GenericViewSet):
         if config.ftso is not None:
             # NOTE: for this to work saving to DB must be atomic
             latest_ftso = (
-                ProtocolMessageRelayed.objects.filter(protocol_id=config.ftso.protocol_id)
+                ProtocolMessageRelayed.objects.filter(
+                    protocol_id=config.ftso.protocol_id
+                )
                 .order_by("-voting_round_id")
                 .first()
             )
@@ -52,7 +54,9 @@ class FspViewSet(viewsets.GenericViewSet):
 
         if config.fdc is not None:
             latest_fdc = (
-                ProtocolMessageRelayed.objects.filter(protocol_id=config.fdc.protocol_id)
+                ProtocolMessageRelayed.objects.filter(
+                    protocol_id=config.fdc.protocol_id
+                )
                 .order_by("-voting_round_id")
                 .first()
             )
@@ -61,10 +65,16 @@ class FspViewSet(viewsets.GenericViewSet):
 
         if latest_ftso is not None:
             vef = VotingEpoch(latest_ftso.voting_round_id)
-            data["latest_ftso"] = {"voting_round_id": vef.n, "start_timestamp": vef.start_s}
+            data["latest_ftso"] = {
+                "voting_round_id": vef.n,
+                "start_timestamp": vef.start_s,
+            }
         if latest_fdc is not None:
             vef = VotingEpoch(latest_fdc.voting_round_id)
-            data["latest_fdc"] = {"voting_round_id": vef.n, "start_timestamp": vef.start_s}
+            data["latest_fdc"] = {
+                "voting_round_id": vef.n,
+                "start_timestamp": vef.start_s,
+            }
 
         serializer = self.get_serializer(data)
 

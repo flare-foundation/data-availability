@@ -107,7 +107,11 @@ class Contracts:
 
             for name in attr_names:
                 if name not in contracts:
-                    errors.append(ValueError(f"Contract '{name}' does not exist in '{settings.CONFIG_MODULE}'"))
+                    errors.append(
+                        ValueError(
+                            f"Contract '{name}' does not exist in '{settings.CONFIG_MODULE}'"
+                        )
+                    )
                     continue
 
                 kwargs[name] = Contract(

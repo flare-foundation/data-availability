@@ -57,8 +57,13 @@ class VotingEpoch(Epoch):
 
 
 class RewardEpoch(Epoch):
-    _FIRST_EPOCH_TS = VotingEpoch(config.epoch_settings.first_reward_epoch_start_voting_round_id).start_s
-    _EPOCH_DURATION = config.epoch_settings.reward_epoch_duration_in_voting_epochs * VotingEpoch.duration()
+    _FIRST_EPOCH_TS = VotingEpoch(
+        config.epoch_settings.first_reward_epoch_start_voting_round_id
+    ).start_s
+    _EPOCH_DURATION = (
+        config.epoch_settings.reward_epoch_duration_in_voting_epochs
+        * VotingEpoch.duration()
+    )
 
     @classmethod
     def from_voting_epoch(cls, voting_epoch: VotingEpoch) -> Self:

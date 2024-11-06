@@ -46,8 +46,10 @@ class FeedResult(models.Model):
     @property
     def timestamp(self):
         return (
-            self.voting_round_id + 1
-        ) * config.epoch_settings.voting_epoch_duration_seconds + config.epoch_settings.first_voting_round_start_ts
+            (self.voting_round_id + 1)
+            * config.epoch_settings.voting_epoch_duration_seconds
+            + config.epoch_settings.first_voting_round_start_ts
+        )
 
     @property
     def hash(self):

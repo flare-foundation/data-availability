@@ -31,7 +31,9 @@ class FtsoProcessor(Processor):
 
         rand = [RandomResult.from_decoded_dict(parsed_response.random)]
         res = [FeedResult.from_decoded_dict(leaf) for leaf in parsed_response.medians]
-        merkle_tree = MerkleTree([r.hash.hex() for r in rand] + [r.hash.hex() for r in res])
+        merkle_tree = MerkleTree(
+            [r.hash.hex() for r in rand] + [r.hash.hex() for r in res]
+        )
 
         if merkle_tree.root and un_prefix_0x(merkle_tree.root.lower()) != provider_root:
             logger.error(
@@ -50,4 +52,6 @@ class FtsoProcessor(Processor):
             ProtocolMessageRelayed.objects.bulk_create([root])
             RandomResult.objects.bulk_create(rand)
             FeedResult.objects.bulk_create(res)
-            logger.info(f"Processed round {root.voting_round_id} and saved FTSO data to DB")
+            logger.info(
+                f"Processed round {root.voting_round_id} and saved FTSO data to DB"
+            )

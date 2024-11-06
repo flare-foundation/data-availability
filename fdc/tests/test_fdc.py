@@ -78,8 +78,13 @@ class FdcProcessorTest(TestCase):
         response.raise_for_status.return_value = None
         with patch("processing.client.main.FdcClient._get", return_value=response):
             self.parsed_response = self.FDCclient.get_data(0)
-        with patch("processing.client.main.FdcClient.get_data", return_value=self.parsed_response):
-            self.leafs = self.FDCprocessor.process_single_provider(self.root, self.FDCclient)
+        with patch(
+            "processing.client.main.FdcClient.get_data",
+            return_value=self.parsed_response,
+        ):
+            self.leafs = self.FDCprocessor.process_single_provider(
+                self.root, self.FDCclient
+            )
 
     def test_process_single_fdc_provider(self):
         assert self.leafs is not None
@@ -109,7 +114,10 @@ class FdcProcessorTest(TestCase):
         )
 
     def test_process(self):
-        with patch("processing.fdc_processing.FdcProcessor.fetch_merkle_tree", return_value=self.leafs):
+        with patch(
+            "processing.fdc_processing.FdcProcessor.fetch_merkle_tree",
+            return_value=self.leafs,
+        ):
             self.FDCprocessor.process(self.root)
 
         self.assertEqual(AttestationResult.objects.count(), 14)
@@ -136,5 +144,6 @@ class FdcProcessorTest(TestCase):
         self.assertEqual(protocol_message_relayed.voting_round_id, 792357)
         self.assertEqual(protocol_message_relayed.is_secure_random, True)
         self.assertEqual(
-            protocol_message_relayed.merkle_root, "dd4a35a73e76d1326be609b349fff9beccc6516ef60692425cdc14a78965c11c"
+            protocol_message_relayed.merkle_root,
+            "dd4a35a73e76d1326be609b349fff9beccc6516ef60692425cdc14a78965c11c",
         )

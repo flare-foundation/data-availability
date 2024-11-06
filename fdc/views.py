@@ -19,11 +19,15 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
     def list(self, request, *args, **kwargs):
         self.serializer_class = AttestationMinimalProofSerializer
 
-        _query_params = ListAttestationResultQuerySerializer(data=self.request.query_params)
+        _query_params = ListAttestationResultQuerySerializer(
+            data=self.request.query_params
+        )
         _query_params.is_valid(raise_exception=True)
         query_params = _query_params.validated_data
 
-        queryset = self.get_queryset().filter(voting_round_id=query_params["voting_round_id"])
+        queryset = self.get_queryset().filter(
+            voting_round_id=query_params["voting_round_id"]
+        )
 
         serializer = self.get_serializer(queryset, many=True)
 
@@ -33,7 +37,9 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
         request=AttestationTypeGetByRoundIdBytesRequest,
         responses=AttestationMinimalProofSerializer,
     )
-    @decorators.action(detail=False, methods=["post"], url_path="get-proof-round-id-bytes")
+    @decorators.action(
+        detail=False, methods=["post"], url_path="get-proof-round-id-bytes"
+    )
     def get_proof_round_id_bytes(self, request, *args, **kwargs):
         self.serializer_class = AttestationMinimalProofSerializer
 

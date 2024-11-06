@@ -45,7 +45,9 @@ class FtsoClient(BaseClient):
         response.raise_for_status()
         res = response.json()
         assert isinstance(res, dict)
-        assert self._validation_status_check(res), f"Status not successful (OK) {request_url}"
+        assert self._validation_status_check(
+            res
+        ), f"Status not successful (OK) {request_url}"
 
         if "tree" not in res:
             raise Exception("Tree not in response")
@@ -70,7 +72,9 @@ class FdcClient(BaseClient):
         response.raise_for_status()
         res = response.json()
         assert isinstance(res, dict)
-        assert self._validation_status_check(res), f"Status not successful (OK) {request_url}"
+        assert self._validation_status_check(
+            res
+        ), f"Status not successful (OK) {request_url}"
         try:
             return cattrs.structure(res, FdcDataResponse)
         except Exception as e:

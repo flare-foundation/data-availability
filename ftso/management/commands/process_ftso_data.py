@@ -16,7 +16,9 @@ class Command(BaseCommand):
             return
 
         ftso_processor = FtsoProcessor(config.ftso)
-        processor = DataProcessor(config.rpc_url, config.syncing_config, config.contracts.Relay)
+        processor = DataProcessor(
+            config.rpc_url, config.syncing_config, config.contracts.Relay
+        )
         processor.run(
             ProtocolProcessingConfig(
                 protocol_id=config.ftso.protocol_id,

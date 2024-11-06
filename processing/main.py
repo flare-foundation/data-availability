@@ -49,7 +49,9 @@ class DataProcessor:
 
         while True:
             height = self.w3.eth.get_block_number()
-            logger.info(f"Latest processed/current Height: {latest_processed_height} | {height}")
+            logger.info(
+                f"Latest processed/current Height: {latest_processed_height} | {height}"
+            )
 
             if height == latest_processed_height:
                 time.sleep(self.processing_sleep_cycle)
@@ -58,7 +60,9 @@ class DataProcessor:
             processing_queue = deque()
             while latest_processed_height < height:
                 from_block_exc = latest_processed_height
-                to_block_inc = min(latest_processed_height + self.max_processing_block_batch, height)
+                to_block_inc = min(
+                    latest_processed_height + self.max_processing_block_batch, height
+                )
                 events = self.w3.eth.get_logs(
                     {
                         "fromBlock": from_block_exc + 1,
@@ -68,13 +72,17 @@ class DataProcessor:
                 )
                 latest_processed_height = to_block_inc
 
-                logger.debug(f"Processing from {from_block_exc} to {to_block_inc}, found {len(events)} events")
+                logger.debug(
+                    f"Processing from {from_block_exc} to {to_block_inc}, found {len(events)} events"
+                )
                 for event in events:
                     signature = un_prefix_0x(event["topics"][0].hex()).lower()
                     if signature not in EVENT_SIGNATURE:
                         continue
                     logger.debug("Processing event")
-                    ev = ProtocolMessageRelayed.process_event(event, RELAY_EVENT, self.w3)
+                    ev = ProtocolMessageRelayed.process_event(
+                        event, RELAY_EVENT, self.w3
+                    )
                     if ev is None:
                         continue
                     if ev.protocol_id != protocol_config.protocol_id:

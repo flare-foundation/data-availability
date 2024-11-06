@@ -47,7 +47,9 @@ class ProtocolMessageRelayed(models.Model):
             _voting_round_id,
             _is_secure_random,
             _merkle_root,
-        ) = event_data_extract_args(event_data, "protocolId", "votingRoundId", "isSecureRandom", "merkleRoot")
+        ) = event_data_extract_args(
+            event_data, "protocolId", "votingRoundId", "isSecureRandom", "merkleRoot"
+        )
         protocol_id = int(_protocol_id)
         voting_round_id = int(_voting_round_id)
         is_secure_random = bool(_is_secure_random)
@@ -62,7 +64,9 @@ class ProtocolMessageRelayed(models.Model):
         )
 
     @classmethod
-    def process_event(cls, log_receipt: LogReceipt, event: Event, w3: Web3) -> "ProtocolMessageRelayed":
+    def process_event(
+        cls, log_receipt: LogReceipt, event: Event, w3: Web3
+    ) -> "ProtocolMessageRelayed":
         try:
             ev = get_event_data(w3.codec, event.abi, log_receipt)
             return cls.from_decoded_dict(ev)
