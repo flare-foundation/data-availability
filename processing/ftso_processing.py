@@ -1,4 +1,3 @@
-import logging
 from typing import cast
 
 from django.db import transaction
@@ -10,8 +9,6 @@ from ftso.models import FeedResult, RandomResult
 from processing.client.main import BaseClient, FtsoClient
 from processing.processing import Processor
 from processing.utils import un_prefix_0x
-
-logger = logging.getLogger(__name__)
 
 
 class FtsoProcessor(Processor):
@@ -25,7 +22,7 @@ class FtsoProcessor(Processor):
 
         if provider_root != root.merkle_root:
             raise ValueError(
-                f"Root mismatch [provider:{provider_root}] [chain:{root.merkle_root}]"
+                f"Root mismatch [chain:{root.merkle_root}] [provider:{provider_root}]"
             )
 
         rand = [RandomResult.from_decoded_dict(parsed_response.random)]

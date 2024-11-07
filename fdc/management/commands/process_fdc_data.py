@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     def handle(self, *args, **options):
         if not config.fdc.providers:
-            logger.warning("Providers are not set for fdc.")
+            logger.warning("Providers are not set for fdc")
             return
 
         fdc_processor = FdcProcessor(config.fdc)

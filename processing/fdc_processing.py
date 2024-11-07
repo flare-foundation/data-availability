@@ -1,4 +1,3 @@
-import logging
 from typing import cast
 
 from django.db import transaction
@@ -10,8 +9,6 @@ from fsp.models import ProtocolMessageRelayed
 from processing.client.main import BaseClient, FdcClient
 from processing.processing import Processor
 from processing.utils import un_prefix_0x
-
-logger = logging.getLogger(__name__)
 
 
 class FdcProcessor(Processor):

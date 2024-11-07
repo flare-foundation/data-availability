@@ -22,6 +22,13 @@ class ProtocolProcessingConfig:
     processor: Processor
 
 
+@frozen
+class ProcessingRetry:
+    event: ProtocolMessageRelayed
+    retry: int
+    time: float
+
+
 class DataProcessor:
     RELAY_EVENT_NAME = "ProtocolMessageRelayed"
 
@@ -56,7 +63,7 @@ class DataProcessor:
         logger.info(f"Using providers {providers_string}.")
         logger.info(f"Starting processing from block {start}.")
 
-        processing_queue: deque[tuple[ProtocolMessageRelayed, int, float]] = deque()
+        retry_queue: deque[ProcessingRetry] = deque()
 
         while True:
             height = self.w3.eth.get_block_number()
@@ -100,28 +107,32 @@ class DataProcessor:
                         logger.warning(
                             f"Failed to process and added to retry queue: {ev}"
                         )
-                        processing_queue.append((ev, 1, time.time()))
+                        retry_queue.append(ProcessingRetry(ev, 1, time.time()))
 
             # Retry to process failed events
-            while processing_queue:
-                ev, i, t = processing_queue.popleft()
+            while retry_queue:
+                processing_retry = retry_queue.popleft()
+                event = processing_retry.event
+                retry = processing_retry.retry
 
-                if time.time() - t <= 20:
+                if time.time() - processing_retry.time <= 20:
                     # the first event has the smallest t in the processing_queue
-                    processing_queue.appendleft((ev, i, t))
+                    retry_queue.appendleft(ProcessingRetry(event, retry, time.time()))
                     break
 
                 try:
-                    logger.debug(f"Processing event {ev}")
-                    protocol_config.processor.process(ev)
-                    logger.info(f"Processed event with retry [retry:{i}] {ev}")
-
+                    logger.debug(f"Processing event {event}")
+                    protocol_config.processor.process(event)
+                    logger.info(f"Processed event with retry [retry:{retry}] {event}.")
                 except Exception as e:
-                    if i < 5:
-                        processing_queue.append((ev, i + 1, time.time()))
+                    if retry < 5:
+                        retry_queue.append(
+                            ProcessingRetry(event, retry + 1, time.time())
+                        )
                     else:
                         capture_exception(e)
+                        # in total there were (retry + 1) failed processing
                         logger.error(
-                            f"Failed: [vr:{ev.voting_round_id}] "
-                            f"[retry:{i}] [event:{ev}]"
+                            f"Failed: [vr:{event.voting_round_id}] "
+                            f"[retry:{retry}] [event:{event}]"
                         )

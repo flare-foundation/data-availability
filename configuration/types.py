@@ -84,7 +84,7 @@ def parse_protocol_providers(protocol_prefix: str) -> list[ProtocolProvider]:
         if provider is not None:
             continue
         valid_config = False
-        logger.debug(f"{protocol_prefix} {provider} are not set.")
+        logger.debug(f"{protocol_prefix} {provider} are not set")
 
     if not valid_config:
         return []
