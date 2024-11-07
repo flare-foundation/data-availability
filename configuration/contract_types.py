@@ -3,9 +3,8 @@ from typing import Self
 
 from attrs import field, frozen
 from django.conf import settings
-from eth_typing import ChecksumAddress
+from eth_typing import ABI, ABIEvent, ABIFunction, ChecksumAddress
 from web3 import Web3
-from web3.types import ABI, ABIEvent, ABIFunction
 
 from processing.utils import un_prefix_0x
 
