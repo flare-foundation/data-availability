@@ -71,7 +71,6 @@ INSTALLED_APPS = [
     "django.contrib.postgres",
     # dependencies
     "rest_framework",
-    "simple_history",
     "corsheaders",
     "drf_spectacular",
     # our apps
@@ -93,7 +92,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "simple_history.middleware.HistoryRequestMiddleware",  # Injects user in simple history
 ]
 
 ROOT_URLCONF = "project.urls"
