@@ -21,7 +21,7 @@ services:
     # command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
 
   django:
-    container_name: ${COMPOSE_PROJECT_NAME}_server
+    container_name: ${COMPOSE_PROJECT_NAME}_django
     build:
       context: ../../
       dockerfile: scripts/dev/Dockerfile
@@ -32,7 +32,7 @@ services:
     ports:
       - "0.0.0.0:${SERVER_PROXY_PORT}:8000"
     depends_on:
-      postgresdb:
+      db:
         condition: service_healthy
     # uncomment if healthcheck is needed
     # healthcheck:
