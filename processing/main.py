@@ -52,7 +52,9 @@ class DataProcessor:
             protocol_id=protocol_config.protocol_id,
         ).aggregate(m=Max("block"))["m"]
 
-        start = db_processed_height or (self.default_start_height - 1)
+        # latest hight or default
+        _start = db_processed_height or (self.default_start_height - 1)
+        start = _start + 1
 
         logger.info(
             f"Processing started for protocol [id:{protocol_config.protocol_id}]."
