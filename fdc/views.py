@@ -1,5 +1,5 @@
-from drf_spectacular.utils import extend_schema
-from rest_framework import decorators, response, viewsets
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import decorators, response, serializers, status, viewsets
 
 from fdc.models import AttestationResult
 
@@ -35,7 +35,15 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
 
     @extend_schema(
         request=AttestationTypeGetByRoundIdBytesRequest,
-        responses=AttestationMinimalProofSerializer,
+        responses={
+            200: AttestationMinimalProofSerializer,
+            400: inline_serializer(
+                "AttestationTypeGetByRoundIdBytesErrorSerializer",
+                fields={
+                    "error": serializers.CharField(),
+                },
+            ),
+        },
     )
     @decorators.action(
         detail=False, methods=["post"], url_path="get-proof-round-id-bytes"
@@ -47,10 +55,16 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
         _body.is_valid(raise_exception=True)
         body = _body.validated_data
 
-        obj = self.get_queryset().get(
-            voting_round_id=body["votingRoundId"],
-            request_hex=body["requestBytes"],
-        )
+        try:
+            obj = self.get_queryset().get(
+                voting_round_id=body["votingRoundId"],
+                request_hex=body["requestBytes"],
+            )
+        except AttestationResult.DoesNotExist:
+            return response.Response(
+                data={"error": "attestation request not found"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         serializer = self.get_serializer(obj)
 

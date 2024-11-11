@@ -1,8 +1,8 @@
 import logging
 
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, inline_serializer
 from py_flare_common.merkle import MerkleTree
-from rest_framework import decorators, response, status, viewsets
+from rest_framework import decorators, response, serializers, status, viewsets
 
 from ftso.models import FeedResult, RandomResult
 from ftso.serializers.data import (
@@ -55,7 +55,15 @@ class FeedResultViewSet(viewsets.GenericViewSet):
     @extend_schema(
         parameters=[FeedResultFeedsWithProofsQuerySerializer],
         request=FeedResultFeedsWithProofsRequestSerializer,
-        responses={200: MerkleProofValueSerializer(many=True)},
+        responses={
+            200: MerkleProofValueSerializer(many=True),
+            400: inline_serializer(
+                "AttestationTypeGetByRoundIdBytesErrorSerializer",
+                fields={
+                    "error": serializers.CharField(),
+                },
+            ),
+        },
     )
     @decorators.action(
         detail=False, methods=["post"], url_path="anchor-feeds-with-proof"
@@ -87,7 +95,10 @@ class FeedResultViewSet(viewsets.GenericViewSet):
             .all()
         )
         if queryset is None:
-            return response.Response(None, status=status.HTTP_404_NOT_FOUND)
+            return response.Response(
+                data={"error": "anchor feeds not found"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         tree = get_merkle_tree_for_round(voting_round_id)
         data = [
