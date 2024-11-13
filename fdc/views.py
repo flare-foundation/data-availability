@@ -2,6 +2,7 @@ from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import decorators, response, serializers, status, viewsets
 
 from fdc.models import AttestationResult
+from processing.utils import un_prefix_0x
 
 from .serializers.data import AttestationMinimalProofSerializer
 from .serializers.query import ListAttestationResultQuerySerializer
@@ -58,7 +59,7 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
         try:
             obj = self.get_queryset().get(
                 voting_round_id=body["votingRoundId"],
-                request_hex=body["requestBytes"],
+                request_hex=un_prefix_0x(body["requestBytes"]),
             )
         except AttestationResult.DoesNotExist:
             return response.Response(
