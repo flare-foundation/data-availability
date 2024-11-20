@@ -4,7 +4,7 @@ from ..models import AttestationResult
 
 
 class AttestationMinimalProofSerializer(serializers.ModelSerializer):
-    response = serializers.ReadOnlyField()
+    response = serializers.DictField()
 
     class Meta:
         model = AttestationResult
