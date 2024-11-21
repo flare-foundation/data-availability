@@ -32,7 +32,24 @@ class AttestationResult(models.Model):
         c = decode_transaction_data(
             a, EMPTY_METHOD_IDENTIFIER + self.response_hex, [abi_bytes_to_hex]
         )  # type: ignore
-        return c["data"]
+
+        data = c["data"]
+
+        ref_stack: list[dict] = [data]
+        while ref_stack:
+            d = ref_stack.pop()
+
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    ref_stack.append(v)
+                if isinstance(v, list):
+                    for i in range(len(v)):
+                        if isinstance(v[i], int):
+                            d[k][i] = str(d[k][i])
+                if isinstance(v, int):
+                    d[k] = str(d[k])
+
+        return data
 
     @classmethod
     def from_decoded_dict(cls, attestation_response: FdcAttestationResponse):
