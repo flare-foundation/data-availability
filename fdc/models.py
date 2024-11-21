@@ -44,9 +44,9 @@ class AttestationResult(models.Model):
                     ref_stack.append(v)
                 if isinstance(v, list):
                     for i in range(len(v)):
-                        if isinstance(v[i], int):
+                        if type(v[i]) is int:
                             d[k][i] = str(d[k][i])
-                if isinstance(v, int):
+                if type(v) is int:
                     d[k] = str(d[k])
 
         return data
