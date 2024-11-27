@@ -8,3 +8,9 @@ class AttestationTypeGetByRoundIdBytesRequest(serializers.Serializer):
     requestBytes = serializers.CharField(
         help_text="Request bytes that were send (emitted)",
     )
+
+
+class AttestationTypeGetByRoundBytesRequest(serializers.Serializer):
+    requestBytes = serializers.CharField(
+        help_text="Request bytes that were send (emitted)",
+    )
