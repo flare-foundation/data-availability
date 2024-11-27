@@ -25,6 +25,7 @@ from rest_framework import decorators, response, serializers, status
 
 
 @extend_schema(
+    description="Checks whether the data availability runs correctly",
     responses=inline_serializer(
         name="Health",
         fields={"healthy": serializers.BooleanField()},

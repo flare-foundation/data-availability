@@ -26,6 +26,7 @@ class FeedResultViewSet(viewsets.GenericViewSet):
         return FeedResult.objects.all()
 
     @extend_schema(
+        description="Retrieves the feed id and feed name based on voting round id",
         parameters=[FeedResultAvailableFeedsQuerySerializer],
         responses={200: FeedValueNameSerializer(many=True)},
     )
@@ -53,6 +54,7 @@ class FeedResultViewSet(viewsets.GenericViewSet):
         return response.Response(serializer.data)
 
     @extend_schema(
+        description="Retrieves the feed values with there proofs based on voting round id and feed ids",
         parameters=[FeedResultFeedsWithProofsQuerySerializer],
         request=FeedResultFeedsWithProofsRequestSerializer,
         responses={
@@ -66,7 +68,7 @@ class FeedResultViewSet(viewsets.GenericViewSet):
         },
     )
     @decorators.action(
-        detail=False, methods=["post"], url_path="anchor-feeds-with-proof"
+        detail=False, methods=["post"], url_path="anchor-feeds-with-proof",
     )
     def anchor_feeds_with_proof(self, request, *args, **kwargs):
         self.serializer_class = MerkleProofValueSerializer

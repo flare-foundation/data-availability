@@ -9,7 +9,10 @@ from .serializers import VotingRoundSerializer, VotingRoundStatusSerializer
 
 
 class FspViewSet(viewsets.GenericViewSet):
-    @extend_schema(responses=VotingRoundSerializer)
+    @extend_schema(
+        description="Retrieves the last voting round id and its starting timestamp",
+        responses=VotingRoundSerializer,
+    )
     @decorators.action(detail=False, methods=["get"], url_path="latest-voting-round")
     def latest_voting_round(self, request, *args, **kwargs):
         self.serializer_class = VotingRoundSerializer
@@ -24,7 +27,10 @@ class FspViewSet(viewsets.GenericViewSet):
 
         return response.Response(serializer.data)
 
-    @extend_schema(responses=VotingRoundStatusSerializer)
+    @extend_schema(
+        description="Retrieves the last voting round id and its starting timestamp for fdc and ftso",
+        responses=VotingRoundStatusSerializer,
+    )
     @decorators.action(detail=False, methods=["get"], url_path="status")
     def status(self, request, *args, **kwargs):
         self.serializer_class = VotingRoundStatusSerializer
