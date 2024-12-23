@@ -50,7 +50,7 @@ LOGGING = {
     },
     "root": {
         "handlers": ["console"],
-        "level": "INFO",
+        "level": os.environ.get("LOG_LEVEL", "INFO"),
     },
 }
 
