@@ -33,7 +33,7 @@ You can then run the whole project with below example `docker-compose.yaml`.
 
 ```yaml
 x-django: &django
-  image: local/data-availability
+  image: ghcr.io/flare-foundation/data-availability:latest
   env_file:
     - .env
   restart: unless-stopped
