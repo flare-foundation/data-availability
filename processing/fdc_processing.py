@@ -27,8 +27,8 @@ class FdcProcessor(Processor):
         merkle_tree = MerkleTree([leaf.hash.hex() for leaf in leafs])
 
         if (
-            merkle_tree.root
-            and un_prefix_0x(merkle_tree.root.lower()) != root.merkle_root
+            merkle_tree.root is None
+            or un_prefix_0x(merkle_tree.root.lower()) != root.merkle_root
         ):
             raise ValueError(
                 f"Root mismatch [chain:{root.merkle_root}] [calculated:{merkle_tree.root}]"

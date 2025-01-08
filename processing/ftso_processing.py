@@ -31,7 +31,10 @@ class FtsoProcessor(Processor):
             [r.hash.hex() for r in rand] + [r.hash.hex() for r in res]
         )
 
-        if merkle_tree.root and un_prefix_0x(merkle_tree.root.lower()) != provider_root:
+        if (
+            merkle_tree.root is None
+            or un_prefix_0x(merkle_tree.root.lower()) != provider_root
+        ):
             raise ValueError(
                 f"Root mismatch [provider:{provider_root}] [calculated:{merkle_tree.root}]"
             )
