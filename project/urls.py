@@ -29,7 +29,7 @@ from rest_framework import decorators, response, serializers, status
     responses=inline_serializer(
         name="Health",
         fields={"healthy": serializers.BooleanField()},
-    )
+    ),
 )
 @decorators.api_view(["get"])
 def health(request):

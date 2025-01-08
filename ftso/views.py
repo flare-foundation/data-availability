@@ -68,7 +68,9 @@ class FeedResultViewSet(viewsets.GenericViewSet):
         },
     )
     @decorators.action(
-        detail=False, methods=["post"], url_path="anchor-feeds-with-proof",
+        detail=False,
+        methods=["post"],
+        url_path="anchor-feeds-with-proof",
     )
     def anchor_feeds_with_proof(self, request, *args, **kwargs):
         self.serializer_class = MerkleProofValueSerializer
