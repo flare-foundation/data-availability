@@ -38,7 +38,7 @@ def get_config() -> Configuration:
 
     starting_config = SyncingConfig(
         start_height=int(e.get("INDEXING_DEFAULT_HEIGHT", "14155435")),
-        max_processing_block_batch=50,
+        max_processing_block_batch=int(e.get("INDEXING_BATCH_SIZE", "30")),
         processing_sleep_cycle=int(e.get("INDEXING_SLEEP_CYCLE", "20")),
     )
 
