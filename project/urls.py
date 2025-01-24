@@ -52,6 +52,7 @@ urlpatterns += [
     path("api/v0/", include("ftso.urls")),
     path("api/v0/", include("fsp.urls")),
     path("api/v0/", include("fdc.urls.v0")),
+    path("api/v1/", include("fdc.urls.v1")),
 ]
 
 if "django_prometheus" in settings.INSTALLED_APPS:

@@ -9,6 +9,7 @@ from web3._utils.contracts import decode_transaction_data
 from web3._utils.normalizers import abi_bytes_to_hex
 
 from processing.client.types import FdcAttestationResponse
+from processing.utils import prefix_0x, un_prefix_0x
 
 EMPTY_METHOD_IDENTIFIER = "00000000"
 
@@ -84,6 +85,9 @@ class AttestationResult(models.Model):
     @property
     def response_ts(self):
         return dict_transform_typescript(self.response)
+
+    def attestation_type(self) -> str:
+        return prefix_0x(un_prefix_0x(self.request_hex)[:64])
 
     @classmethod
     def from_decoded_dict(cls, attestation_response: FdcAttestationResponse):

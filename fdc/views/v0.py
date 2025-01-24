@@ -17,6 +17,7 @@ class AttestationResultV0ViewSet(viewsets.GenericViewSet):
         return AttestationResult.objects.all()
 
     @extend_schema(
+        deprecated=True,
         description="Retrieves the attestation minimal proofs based on voting round id",
         parameters=[ListAttestationResultV0QuerySerializer],
         responses=AttestationResultV0Serializer(many=True),
@@ -39,6 +40,7 @@ class AttestationResultV0ViewSet(viewsets.GenericViewSet):
         return response.Response(serializer.data)
 
     @extend_schema(
+        deprecated=True,
         description="Retrieves the attestation minimal proof based on request bytes and voting round id",
         request=AttestationTypeGetByRoundIdBytesv0RequestSerializer,
         responses={
@@ -79,6 +81,7 @@ class AttestationResultV0ViewSet(viewsets.GenericViewSet):
         return response.Response(serializer.data)
 
     @extend_schema(
+        deprecated=True,
         description="Retrieves the last attestation minimal proof based on request bytes",
         request=AttestationTypeGetByRoundBytesV0RequestSerializer,
         responses={
