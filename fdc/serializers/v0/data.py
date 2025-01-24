@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
-from ..models import AttestationResult
+from ...models import AttestationResult
 
 
-class AttestationMinimalProofSerializer(serializers.ModelSerializer):
+class AttestationResultV0Serializer(serializers.ModelSerializer):
     response = serializers.DictField(source="response_ts")
 
     class Meta:

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 
-class AttestationTypeGetByRoundIdBytesRequest(serializers.Serializer):
+class AttestationTypeGetByRoundIdBytesv0RequestSerializer(serializers.Serializer):
     votingRoundId = serializers.IntegerField(
         help_text="Voting round when the request was made",
     )
@@ -10,7 +10,7 @@ class AttestationTypeGetByRoundIdBytesRequest(serializers.Serializer):
     )
 
 
-class AttestationTypeGetByRoundBytesRequest(serializers.Serializer):
+class AttestationTypeGetByRoundBytesV0RequestSerializer(serializers.Serializer):
     requestBytes = serializers.CharField(
         help_text="Request bytes that were send (emitted)",
     )

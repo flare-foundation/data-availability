@@ -1,30 +1,30 @@
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import decorators, response, serializers, status, viewsets
 
-from fdc.models import AttestationResult
 from processing.utils import un_prefix_0x
 
-from .serializers.data import AttestationMinimalProofSerializer
-from .serializers.query import ListAttestationResultQuerySerializer
-from .serializers.request import (
-    AttestationTypeGetByRoundBytesRequest,
-    AttestationTypeGetByRoundIdBytesRequest,
+from ..models import AttestationResult
+from ..serializers.v0.data import AttestationResultV0Serializer
+from ..serializers.v0.query import ListAttestationResultV0QuerySerializer
+from ..serializers.v0.request import (
+    AttestationTypeGetByRoundBytesV0RequestSerializer,
+    AttestationTypeGetByRoundIdBytesv0RequestSerializer,
 )
 
 
-class AttestationResultViewSet(viewsets.GenericViewSet):
+class AttestationResultV0ViewSet(viewsets.GenericViewSet):
     def get_queryset(self):
         return AttestationResult.objects.all()
 
     @extend_schema(
         description="Retrieves the attestation minimal proofs based on voting round id",
-        parameters=[ListAttestationResultQuerySerializer],
-        responses=AttestationMinimalProofSerializer(many=True),
+        parameters=[ListAttestationResultV0QuerySerializer],
+        responses=AttestationResultV0Serializer(many=True),
     )
     def list(self, request, *args, **kwargs):
-        self.serializer_class = AttestationMinimalProofSerializer
+        self.serializer_class = AttestationResultV0Serializer
 
-        _query_params = ListAttestationResultQuerySerializer(
+        _query_params = ListAttestationResultV0QuerySerializer(
             data=self.request.query_params
         )
         _query_params.is_valid(raise_exception=True)
@@ -40,9 +40,9 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
 
     @extend_schema(
         description="Retrieves the attestation minimal proof based on request bytes and voting round id",
-        request=AttestationTypeGetByRoundIdBytesRequest,
+        request=AttestationTypeGetByRoundIdBytesv0RequestSerializer,
         responses={
-            200: AttestationMinimalProofSerializer,
+            200: AttestationResultV0Serializer,
             400: inline_serializer(
                 "AttestationTypeGetByRoundIdBytesErrorSerializer",
                 fields={
@@ -55,9 +55,11 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
         detail=False, methods=["post"], url_path="get-proof-round-id-bytes"
     )
     def get_proof_round_id_bytes(self, request, *args, **kwargs):
-        self.serializer_class = AttestationMinimalProofSerializer
+        self.serializer_class = AttestationResultV0Serializer
 
-        _body = AttestationTypeGetByRoundIdBytesRequest(data=self.request.data)
+        _body = AttestationTypeGetByRoundIdBytesv0RequestSerializer(
+            data=self.request.data
+        )
         _body.is_valid(raise_exception=True)
         body = _body.validated_data
 
@@ -78,9 +80,9 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
 
     @extend_schema(
         description="Retrieves the last attestation minimal proof based on request bytes",
-        request=AttestationTypeGetByRoundBytesRequest,
+        request=AttestationTypeGetByRoundBytesV0RequestSerializer,
         responses={
-            200: AttestationMinimalProofSerializer,
+            200: AttestationResultV0Serializer,
             400: inline_serializer(
                 "AttestationTypeGetByRoundBytesErrorSerializer",
                 fields={
@@ -91,9 +93,11 @@ class AttestationResultViewSet(viewsets.GenericViewSet):
     )
     @decorators.action(detail=False, methods=["post"], url_path="get-proof-round-bytes")
     def get_proof_round_bytes(self, request, *args, **kwargs):
-        self.serializer_class = AttestationMinimalProofSerializer
+        self.serializer_class = AttestationResultV0Serializer
 
-        _body = AttestationTypeGetByRoundBytesRequest(data=self.request.data)
+        _body = AttestationTypeGetByRoundBytesV0RequestSerializer(
+            data=self.request.data
+        )
         _body.is_valid(raise_exception=True)
         body = _body.validated_data
 
