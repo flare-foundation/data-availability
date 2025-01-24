@@ -34,7 +34,10 @@ class AttestationResultV1ViewSet(viewsets.GenericViewSet):
         return response.Response(serializer.data)
 
     @extend_schema(
-        description="Retrieves the attestation minimal proofs based on voting round id",
+        description=(
+            "Returns full merkle tree with proof for each leaf for given round. "
+            "Leafs are abi decoded."
+        ),
         parameters=[ListAttestationResultV1QuerySerializer],
         responses=AttestationResultV1Serializer(many=True),
     )
@@ -43,7 +46,10 @@ class AttestationResultV1ViewSet(viewsets.GenericViewSet):
         return self._list(request, *args, **kwargs)
 
     @extend_schema(
-        description="Retrieves the attestation minimal proofs based on voting round id",
+        description=(
+            "Returns full merkle tree with proof for each leaf for given round. "
+            "Leafs are abi encoded."
+        ),
         parameters=[ListAttestationResultV1QuerySerializer],
         responses=AttestationResultRawV1Serializer(many=True),
     )
@@ -80,7 +86,10 @@ class AttestationResultV1ViewSet(viewsets.GenericViewSet):
         return response.Response(serializer.data)
 
     @extend_schema(
-        description="Retrieves the attestation request proof based on request bytes and voting round id",
+        description=(
+            "Retrieves the attestation request proof for given request bytes and "
+            "voting round. Leafs are abi decoded."
+        ),
         request=AttestationResponseProofByRequestRoundV1RequestSerializer,
         responses={
             200: AttestationResultV1Serializer,
@@ -100,7 +109,10 @@ class AttestationResultV1ViewSet(viewsets.GenericViewSet):
         return self._proof_by_request_round(request, *args, **kwargs)
 
     @extend_schema(
-        description="Retrieves the attestation request proof based on request bytes and voting round id",
+        description=(
+            "Retrieves the attestation request proof for given request bytes and "
+            "voting round. Leafs are abi encoded."
+        ),
         request=AttestationResponseProofByRequestRoundV1RequestSerializer,
         responses={
             200: AttestationResultRawV1Serializer,
