@@ -51,5 +51,14 @@ services:
       django:
         condition: service_healthy
 
+  delete-history:
+    <<: *django
+    command: python manage.py delete_history
+    depends_on:
+      db:
+        condition: service_healthy
+      django:
+        condition: service_healthy
+
 volumes:
   pg_data:

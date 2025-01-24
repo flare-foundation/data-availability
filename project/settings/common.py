@@ -170,4 +170,10 @@ for cls in [QuerySet]:
 
 # END OF DEPENDENCY SETTINGS
 
+_HISTORY_KEEP_ROUNDS = os.environ.get("HISTORY_KEEP_ROUNDS", "")
+try:
+    HISTORY_KEEP_ROUNDS = int(_HISTORY_KEEP_ROUNDS)
+except ValueError:
+    HISTORY_KEEP_ROUNDS = None
+
 CONFIG_MODULE = os.environ.get("CONFIG_MODULE", None)
