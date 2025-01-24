@@ -27,64 +27,9 @@ If you have `SERVER_PROXY_PORT` set to `8000` in your `.env` file, you can find 
 
 ## Deployment
 
-Create a `.env` file from `.env.example.prod` and complete it with the necessary information. If you only want to use data availability for one protocol, comment out the other.
+Create a `.env` file from `.env.example.prod` and complete it with the necessary information. If you only want to use data availability for one protocol, comment out the other. 
 
-You can then run the whole project with below example `docker-compose.yaml`.
-
-```yaml
-x-django: &django
-  image: ghcr.io/flare-foundation/data-availability:latest
-  env_file:
-    - .env
-  restart: unless-stopped
-
-services:
-  db:
-    image: postgres:16
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "-d", "${DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-
-  django:
-    <<: *django
-    ports:
-      - "127.0.0.1:${SERVER_PROXY_PORT}:8000"
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8000/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    depends_on:
-      db:
-        condition: service_healthy
-
-  process-ftso-data:
-    <<: *django
-    command: python manage.py process_ftso_data
-    depends_on:
-      db:
-        condition: service_healthy
-      django:
-        condition: service_healthy
-
-  process-fdc-data:
-    <<: *django
-    command: python manage.py process_fdc_data
-    depends_on:
-      db:
-        condition: service_healthy
-      django:
-        condition: service_healthy
-
-volumes:
-  pg_data:
+```
+docker compose pull
+docker compose up -d
 ```
