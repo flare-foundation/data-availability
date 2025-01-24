@@ -150,6 +150,18 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
 }
 
+if os.environ.get("INJECT_SWAGGER_X_API_KEY_HEADER_AUTH", "false") == "true":
+    SPECTACULAR_SETTINGS["APPEND_COMPONENTS"] = {
+        "securitySchemes": {
+            "ApiKeyAuth": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "x-api-key",
+            }
+        }
+    }
+    SPECTACULAR_SETTINGS["SECURITY"] = [{"ApiKeyAuth": []}]
+
 # django-types
 from django.db.models.query import QuerySet
 
