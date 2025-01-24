@@ -1,4 +1,6 @@
+import copy
 import json
+from typing import Any, Callable
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -9,6 +11,50 @@ from web3._utils.normalizers import abi_bytes_to_hex
 from processing.client.types import FdcAttestationResponse
 
 EMPTY_METHOD_IDENTIFIER = "00000000"
+
+
+def dict_transform(
+    data: dict[str, Any], transformators: dict[type, Callable[[Any], Any]]
+) -> dict[str, Any]:
+    """
+    This function performs a deepcopy of input dict, then recursively traverses it and
+    performs the transformations as defined in transformators input parameter
+
+    Args:
+        data: dictionary that will be transformed
+        transformators: mapper of transformators eg {int: lambda x: str(x)} would
+            transform all integers to string by applying the str(...) function
+
+    Returns:
+        new_data: transformed data
+    """
+
+    new_data = copy.deepcopy(data)
+    ref_stack: list[dict[str, Any] | list[Any]] = [new_data]
+    while ref_stack:
+        d = ref_stack.pop()
+
+        if isinstance(d, list):
+            for i in range(len(d)):
+                if isinstance(d[i], dict) or isinstance(d[i], list):
+                    ref_stack.append(d[i])
+                if type(d[i]) in transformators:
+                    d[i] = transformators[type(d[i])](d[i])
+
+        if isinstance(d, dict):
+            for k, v in d.items():
+                if isinstance(v, dict) or isinstance(v, list):
+                    ref_stack.append(v)
+                if type(v) in transformators:
+                    d[k] = transformators[type(v)](d[k])
+
+    return new_data
+
+
+def dict_transform_typescript(data: dict[str, Any]) -> dict[str, Any]:
+    # NOTE:(matej) this is needed since javascript number type
+    # is a float and will not work correctly with large integers
+    return dict_transform(data, {int: lambda x: str(x)})
 
 
 class AttestationResult(models.Model):
@@ -33,23 +79,11 @@ class AttestationResult(models.Model):
             a, EMPTY_METHOD_IDENTIFIER + self.response_hex, [abi_bytes_to_hex]
         )  # type: ignore
 
-        data = c["data"]
+        return c["data"]
 
-        ref_stack: list[dict] = [data]
-        while ref_stack:
-            d = ref_stack.pop()
-
-            for k, v in d.items():
-                if isinstance(v, dict):
-                    ref_stack.append(v)
-                if isinstance(v, list):
-                    for i in range(len(v)):
-                        if type(v[i]) is int:
-                            d[k][i] = str(d[k][i])
-                if type(v) is int:
-                    d[k] = str(d[k])
-
-        return data
+    @property
+    def response_ts(self):
+        return dict_transform_typescript(self.response)
 
     @classmethod
     def from_decoded_dict(cls, attestation_response: FdcAttestationResponse):
