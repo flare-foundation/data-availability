@@ -175,5 +175,3 @@ try:
     HISTORY_KEEP_ROUNDS = int(_HISTORY_KEEP_ROUNDS)
 except ValueError:
     HISTORY_KEEP_ROUNDS = None
-
-CONFIG_MODULE = os.environ.get("CONFIG_MODULE", None)

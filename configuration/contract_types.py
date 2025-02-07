@@ -1,15 +1,13 @@
 import json
-from typing import Self
 
 from attrs import field, frozen
-from django.conf import settings
 from eth_typing import ABI, ABIEvent, ABIFunction, ChecksumAddress
 from web3 import Web3
 
 from processing.utils import un_prefix_0x
 
 
-def abi_from_file_location(file_location):
+def abi_from_file_location(file_location: str):
     with open(file_location) as f:
         return json.load(f)["abi"]
 
@@ -89,37 +87,3 @@ class Contract:
                 functions[entry["name"]] = Function(entry["name"], entry, self)
         object.__setattr__(self, "events", events)
         object.__setattr__(self, "functions", functions)
-
-
-@frozen
-class Contracts:
-    Relay: Contract
-
-    @classmethod
-    def from_json(cls, relative_path) -> Self:
-        attr_names = [a.name for a in cls.__attrs_attrs__]  # type: ignore
-        with open(relative_path) as f:
-            contracts = {c["name"]: c["address"] for c in json.load(f)}
-
-            errors = []
-            kwargs = {}
-
-            for name in attr_names:
-                if name not in contracts:
-                    errors.append(
-                        ValueError(
-                            f"Contract '{name}' does not exist in '{settings.CONFIG_MODULE}'"
-                        )
-                    )
-                    continue
-
-                kwargs[name] = Contract(
-                    name,
-                    contracts[name],
-                    f"configuration/chain/{settings.CONFIG_MODULE}/artifacts/{name}.json",
-                )
-
-            if errors:
-                raise ValueError(errors)
-
-            return cls(**kwargs)

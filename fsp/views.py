@@ -4,7 +4,6 @@ from rest_framework import decorators, response, viewsets
 from configuration.config import config
 from fsp.models import ProtocolMessageRelayed
 
-from .epoch import VotingEpoch
 from .serializers import VotingRoundSerializer, VotingRoundStatusSerializer
 
 
@@ -17,10 +16,10 @@ class FspViewSet(viewsets.GenericViewSet):
     def latest_voting_round(self, request, *args, **kwargs):
         self.serializer_class = VotingRoundSerializer
 
-        ve = VotingEpoch.now()
+        ve = config.epoch.voting_epoch_factory.now()
 
         data = {
-            "voting_round_id": ve.n,
+            "voting_round_id": ve.id,
             "start_timestamp": ve.start_s,
         }
         serializer = self.get_serializer(data)
@@ -35,11 +34,11 @@ class FspViewSet(viewsets.GenericViewSet):
     def status(self, request, *args, **kwargs):
         self.serializer_class = VotingRoundStatusSerializer
 
-        ve = VotingEpoch.now()
+        ve = config.epoch.voting_epoch_factory.now()
 
         data = {
             "active": {
-                "voting_round_id": ve.n,
+                "voting_round_id": ve.id,
                 "start_timestamp": ve.start_s,
             },
             "latest_ftso": {"voting_round_id": -1, "start_timestamp": -1},
@@ -70,15 +69,15 @@ class FspViewSet(viewsets.GenericViewSet):
             latest_fdc = None
 
         if latest_ftso is not None:
-            vef = VotingEpoch(latest_ftso.voting_round_id)
+            vef = config.epoch.voting_epoch(latest_ftso.voting_round_id)
             data["latest_ftso"] = {
-                "voting_round_id": vef.n,
+                "voting_round_id": vef.id,
                 "start_timestamp": vef.start_s,
             }
         if latest_fdc is not None:
-            vef = VotingEpoch(latest_fdc.voting_round_id)
+            vef = config.epoch.voting_epoch(latest_fdc.voting_round_id)
             data["latest_fdc"] = {
-                "voting_round_id": vef.n,
+                "voting_round_id": vef.id,
                 "start_timestamp": vef.start_s,
             }
 

@@ -42,14 +42,9 @@ class FeedResult(models.Model):
     def type(self) -> int:
         return int(self.feed_id[:2], 16)
 
-    # TODO: make sure this timestamp is correct
     @property
     def timestamp(self):
-        return (
-            (self.voting_round_id + 1)
-            * config.epoch_settings.voting_epoch_duration_seconds
-            + config.epoch_settings.first_voting_round_start_ts
-        )
+        return config.epoch.voting_epoch(self.voting_round_id).next.start_s
 
     @property
     def hash(self):

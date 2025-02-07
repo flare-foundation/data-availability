@@ -1,11 +1,11 @@
 from rest_framework import serializers
 
-from fsp.epoch import VotingEpoch
+from configuration.config import config
 
 
 class ListAttestationResultV1QuerySerializer(serializers.Serializer):
     voting_round_id = serializers.IntegerField(
         required=False,
-        default=VotingEpoch.now_id,
+        default=config.epoch.voting_epoch_factory.now_id,
         help_text="Voting round. Defaults to latest.",
     )
