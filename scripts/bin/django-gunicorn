@@ -2,8 +2,16 @@
 
 python manage.py migrate
 
-exec gunicorn \
-	-w 2 \
-	-k gthread \
-	-b 0.0.0.0:8000 \
-	project.wsgi:application
+default_flags=(
+	-w 2
+	-k gthread
+	-b 0.0.0.0:8000
+)
+
+if [[ -n "$GUNICORN_FLAGS" ]]; then
+	mapfile -t flags < <(xargs -n 1 <<< "$GUNICORN_FLAGS")
+else
+	flags=("${default_flags[@]}")
+fi
+
+exec gunicorn "${flags[@]}" project.wsgi:application
