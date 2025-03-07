@@ -7,7 +7,7 @@ from processing.utils import prefix_0x
 class Prefix0xField(serializers.CharField):
     def to_representation(self, value):
         if value is None:
-            return None
+            return "None"
 
         return prefix_0x(value)
 
@@ -30,7 +30,6 @@ class FeedValueStructSerializer(serializers.ModelSerializer):
     id = Prefix0xField(source="feed_id")
     value = serializers.IntegerField()
     turnoutBIPS = serializers.IntegerField(source="turnout_bips")
-    decimals = serializers.IntegerField()
 
     class Meta:
         model = FeedResult

@@ -96,8 +96,8 @@ class FeedResultViewSet(viewsets.GenericViewSet):
             self.get_queryset()
             .filter(voting_round_id=voting_round_id)
             .filter(feed_id__in=feed_ids)
-            .all()
         )
+        # TODO: (Andraz) For consistency, consider returning an empty list instead of an error.
         if queryset is None:
             return response.Response(
                 data={"error": "anchor feeds not found"},

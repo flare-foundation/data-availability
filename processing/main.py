@@ -119,7 +119,7 @@ class DataProcessor:
 
                 if time.time() - processing_retry.time <= 20:
                     # the first event has the smallest t in the processing_queue
-                    retry_queue.appendleft(ProcessingRetry(event, retry, time.time()))
+                    retry_queue.appendleft(processing_retry)
                     break
 
                 try:

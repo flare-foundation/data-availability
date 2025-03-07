@@ -77,8 +77,8 @@ class AttestationResult(models.Model):
         abi = json.loads(self.abi)
         a = {"inputs": [abi], "type": "function"}
         c = decode_transaction_data(
-            a, EMPTY_METHOD_IDENTIFIER + self.response_hex, [abi_bytes_to_hex]
-        )  # type: ignore
+            a, EMPTY_METHOD_IDENTIFIER + self.response_hex, [abi_bytes_to_hex] # type: ignore
+        ) 
 
         return c["data"]
 

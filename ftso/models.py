@@ -39,14 +39,6 @@ class FeedResult(models.Model):
         return bytes.fromhex(self.feed_id[2:]).decode().rstrip("\x00").strip()
 
     @property
-    def type(self) -> int:
-        return int(self.feed_id[:2], 16)
-
-    @property
-    def timestamp(self):
-        return config.epoch.voting_epoch(self.voting_round_id).next.start_s
-
-    @property
     def hash(self):
         name_mapper = {
             "votingRoundId": self.voting_round_id,

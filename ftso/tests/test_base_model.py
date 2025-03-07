@@ -36,14 +36,6 @@ class FeedResultTestCase(TestCase):
         feed_result = FeedResult.objects.get(pk=2)
         self.assertEqual(feed_result.representation, "AAVE/USD")
 
-    def test_feed_result_type(self):
-        feed_result = FeedResult.objects.get(pk=1)
-        self.assertEqual(feed_result.type, 1)
-
-    def test_feed_result_timestamp(self):
-        feed_result = FeedResult.objects.get(pk=1)
-        self.assertEqual(feed_result.timestamp, 1658430135)
-
     def test_feed_result_hash_1(self):
         feed_result = FeedResult.objects.get(pk=1)
         self.assertEqual(
