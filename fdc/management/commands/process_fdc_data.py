@@ -16,6 +16,10 @@ class Command(BaseCommand):
             return
 
         fdc_processor = FdcProcessor(config.fdc)
+        for client in fdc_processor.providers:
+            if not client.is_responsive():
+                logger.error(f"Provider {client} is not responsive.")
+
         processor = DataProcessor(
             config.rpc_url, config.syncing_config, config.contracts.relay
         )

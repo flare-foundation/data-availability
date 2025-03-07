@@ -16,6 +16,10 @@ class Command(BaseCommand):
             return
 
         ftso_processor = FtsoProcessor(config.ftso)
+        for client in ftso_processor.providers:
+            if not client.is_responsive():
+                logger.error(f"Provider {client} is not responsive.")
+
         processor = DataProcessor(
             config.rpc_url, config.syncing_config, config.contracts.relay
         )

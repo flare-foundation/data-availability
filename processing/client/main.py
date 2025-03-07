@@ -37,6 +37,20 @@ class BaseClient:
             return False
         return True
 
+    def _is_responsive(self, request_url) -> bool:
+        try:
+            response = self._get(request_url)
+            res = response.json()
+            if res[self.status_keyword] == "NOT_AVAILABLE":
+                return True
+            return False
+
+        except Exception:
+            return False
+
+    def is_responsive(self) -> bool:
+        raise NotImplementedError("Subclasses must implement this method")
+
 
 class FtsoClient(BaseClient):
     def get_data(self, voting_round_id: int) -> FtsoDataResponse:
@@ -62,6 +76,9 @@ class FtsoClient(BaseClient):
         except Exception as e:
             raise e
 
+    def is_responsive(self) -> bool:
+        return self._is_responsive("/data/0")
+
 
 class FdcClient(BaseClient):
     status_keyword = "Status"
@@ -80,3 +97,6 @@ class FdcClient(BaseClient):
         except Exception as e:
             logger.error("Error parsing FdcDataResponse")
             raise e
+
+    def is_responsive(self) -> bool:
+        return self._is_responsive("/getAttestations/0")
