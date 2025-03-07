@@ -7,6 +7,7 @@ class FeedResultAvailableFeedsQuerySerializer(serializers.Serializer):
         help_text="Voting round. Defaults to latest.",
     )
 
+
 class FeedResultFeedsWithProofsQuerySerializer(serializers.Serializer):
     voting_round_id = serializers.IntegerField(
         required=False,

@@ -40,11 +40,12 @@ class FeedResultViewSet(viewsets.GenericViewSet):
         _query_params.is_valid(raise_exception=True)
         query_params = _query_params.validated_data
 
-        voting_round_id = get_requested_round_id(
-            query_params.get("voting_round_id", None)
-        )
+        voting_round_id = get_requested_round_id(query_params.get("voting_round_id"))
         if voting_round_id is None:
-            return response.Response(None, status=status.HTTP_404_NOT_FOUND)
+            return response.Response(
+                data={"error": "no voting rounds in database"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         logger.debug(f"Querying for available feeds for round: {voting_round_id}")
 
@@ -88,7 +89,10 @@ class FeedResultViewSet(viewsets.GenericViewSet):
 
         voting_round_id = get_requested_round_id(query_params.get("voting_round_id"))
         if voting_round_id is None:
-            return response.Response(None, status=status.HTTP_404_NOT_FOUND)
+            return response.Response(
+                data={"error": "no voting rounds in database"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         feed_ids = list(map(un_prefix_0x, body["feed_ids"]))
 
@@ -97,7 +101,7 @@ class FeedResultViewSet(viewsets.GenericViewSet):
             .filter(voting_round_id=voting_round_id)
             .filter(feed_id__in=feed_ids)
         )
-        # TODO: (Andraz) For consistency, consider returning an empty list instead of an error.
+        # TODO: (andraz) For consistency, consider returning an empty list instead of an error.
         if queryset is None:
             return response.Response(
                 data={"error": "anchor feeds not found"},
@@ -118,29 +122,23 @@ class FeedResultViewSet(viewsets.GenericViewSet):
 
 
 # Utils
-# TODO:(luka) Also handle too early rounds
 def get_requested_round_id(query_voting_round_id: int | None) -> int | None:
-    latest_round = FeedResult.objects.latest("voting_round_id")
-    if query_voting_round_id is None:
-        if latest_round is None:
-            # TODO:(luka) we have no data, error/none
-            return None
+    if isinstance(query_voting_round_id, int):
+        return query_voting_round_id
+
+    try:
+        latest_round = FeedResult.objects.latest("voting_round_id")
         return latest_round.voting_round_id
-    query_voting_round_id = int(query_voting_round_id)
-    if query_voting_round_id > latest_round.voting_round_id:
-        # Querying for a round that does not exist (ie is not indexed yet)
-        # TODO:(luka) We can handle this differently
-        logger.debug("Querying for a round that does not yet exist")
-        query_voting_round_id = latest_round.voting_round_id
-    return query_voting_round_id
+    except FeedResult.DoesNotExist:
+        return None
 
 
-# TODO:(luka) WIP
 def get_merkle_tree_for_round(voting_round_id: int) -> MerkleTree:
     queryset = FeedResult.objects.filter(voting_round_id=voting_round_id)
     random = RandomResult.objects.filter(voting_round_id=voting_round_id).first()
     if random is None:
         raise ValueError("No random result for this round")
+
     a = [v.hash.hex() for v in queryset]
     b = random.hash.hex()
     return MerkleTree([b, *a])

@@ -4,7 +4,6 @@ from django.db import models
 from eth_abi.abi import encode
 from web3 import Web3
 
-from configuration.config import config
 from processing.client.types import FtsoRandomResponse, FtsoVotingResponse
 from processing.utils import un_prefix_0x
 
