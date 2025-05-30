@@ -65,17 +65,13 @@ class AttestationResultV1ViewSet(viewsets.GenericViewSet):
         _body.is_valid(raise_exception=True)
         body = _body.validated_data
 
-        try:
-            qs = self.get_queryset().filter(
-                request_hex=un_prefix_0x(body["requestBytes"])
-            )
-            if "votingRoundId" in body:
-                qs = qs.filter(
-                    voting_round_id=body["votingRoundId"],
-                )
-            obj = qs.order_by("-voting_round_id").first()
+        qs = self.get_queryset().filter(request_hex=un_prefix_0x(body["requestBytes"]))
+        if "votingRoundId" in body:
+            qs = qs.filter(voting_round_id=body["votingRoundId"])
 
-        except AttestationResult.DoesNotExist:
+        obj = qs.order_by("-voting_round_id").first()
+
+        if obj is None:
             return response.Response(
                 data={"error": "attestation request not found"},
                 status=status.HTTP_400_BAD_REQUEST,
