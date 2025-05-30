@@ -30,3 +30,4 @@ cattrs==24.1.2
 
 # wsgi
 gunicorn==23.0.0
+gevent==25.5.1
