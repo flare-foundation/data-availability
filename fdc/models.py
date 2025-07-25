@@ -59,8 +59,8 @@ def dict_transform_typescript(data: dict[str, Any]) -> dict[str, Any]:
 
 
 class AttestationResult(models.Model):
-    voting_round_id = models.PositiveBigIntegerField()
-    request_hex = models.CharField()
+    voting_round_id = models.PositiveBigIntegerField(db_index=True)
+    request_hex = models.CharField(db_index=True)
     response_hex = models.CharField()
     abi = models.CharField()  # JSON
     proof = ArrayField(models.CharField())

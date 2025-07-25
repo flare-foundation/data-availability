@@ -9,7 +9,7 @@ from processing.utils import un_prefix_0x
 
 
 class FeedResult(models.Model):
-    voting_round_id = models.PositiveBigIntegerField()
+    voting_round_id = models.PositiveBigIntegerField(db_index=True)
     feed_id = models.CharField(max_length=42)
 
     value = models.BigIntegerField()
