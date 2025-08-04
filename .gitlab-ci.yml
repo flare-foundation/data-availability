@@ -60,7 +60,26 @@ test_ruff:
     - python -m ruff format --check
 
 test_django:
-  <<: *test
+  stage: test
+  variables:
+    GIT_STRATEGY: none
+    POSTGRES_DB: "db"
+    DB_NAME: "db"
+    POSTGRES_USER: "dbuser"
+    DB_USER: "dbuser"
+    POSTGRES_PASSWORD: "dbpass"
+    DB_PASSWORD: "dbpass"
+    DB_HOST: "postgresdb"
+    DB_PORT: "5432"
+    RPC_URL: "https://coston-api.flare.network/ext/bc/C/rpc"
+  services:
+    - name: postgres:16
+      alias: postgresdb
+  image:
+    name: $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH
+    entrypoint: [""]
+  only:
+    - branches
   script:
     - cd /app
     - pip install -r dev-requirements.txt
