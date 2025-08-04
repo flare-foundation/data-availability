@@ -70,7 +70,7 @@ def base_hash(abi, value_mapper) -> bytes:
 
 
 class RandomResult(models.Model):
-    voting_round_id = models.PositiveBigIntegerField()
+    voting_round_id = models.PositiveBigIntegerField(db_index=True)
 
     value = models.CharField(max_length=64)  # 32 bytes
     is_secure = models.BooleanField()
