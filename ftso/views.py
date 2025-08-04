@@ -108,7 +108,14 @@ class FeedResultViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        tree = get_merkle_tree_for_round(voting_round_id)
+        try:
+            tree = get_merkle_tree_for_round(voting_round_id)
+        except ValueError:
+            return response.Response(
+                data={"error": "anchor feeds not found"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         data = [
             {
                 "body": el,
