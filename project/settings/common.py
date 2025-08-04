@@ -27,6 +27,9 @@ DATABASES = {
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
         "HOST": os.environ.get("DB_HOST", "db"),
         "PORT": os.environ.get("DB_PORT", "5432"),
+        "OPTIONS": {
+            "pool": True,
+        },
     }
 }
 
