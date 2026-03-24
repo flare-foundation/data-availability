@@ -11,6 +11,7 @@ dependencies = [
     "gunicorn==25.1.0",
     # database
     "psycopg[binary,pool]==3.3.3",
+    "redis==6.2.0",
     # monitoring
     "prometheus-client==0.24.1",
     "django-prometheus==2.4.1",

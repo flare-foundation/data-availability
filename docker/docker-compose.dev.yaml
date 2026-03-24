@@ -29,6 +29,14 @@ services:
     # uncomment for query logging
     # command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
 
+  redis:
+    image: redis:8
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   django:
     <<: *django
     entrypoint: ["/app/docker/entrypoint-local.sh"]
@@ -37,6 +45,8 @@ services:
       - "${SERVER_PROXY_PORT}:8000"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ../:/app
