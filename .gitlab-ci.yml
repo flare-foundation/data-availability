@@ -15,7 +15,7 @@ variables:
 
 .test_template:
   stage: test
-  image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+  image: ghcr.io/astral-sh/uv:python3.14-bookworm-slim
   cache:
     key:
       files:
@@ -76,7 +76,7 @@ test_django:
     DB_PORT: "5432"
     RPC_URL: "https://coston-api.flare.network/ext/bc/C/rpc"
   services:
-    - name: postgres:16
+    - name: postgres:18
       alias: postgresdb
   script:
     - uv run pytest --cov --cov-report=xml:coverage.xml --junit-xml=junit.xml .
