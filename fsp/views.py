@@ -1,3 +1,5 @@
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema
 from rest_framework import decorators, response, viewsets
 
@@ -12,6 +14,7 @@ class FspViewSet(viewsets.GenericViewSet):
         description="Retrieves the last voting round id and its starting timestamp",
         responses=VotingRoundSerializer,
     )
+    @method_decorator(cache_page(10))
     @decorators.action(detail=False, methods=["get"], url_path="latest-voting-round")
     def latest_voting_round(self, request, *args, **kwargs):
         self.serializer_class = VotingRoundSerializer
@@ -30,6 +33,7 @@ class FspViewSet(viewsets.GenericViewSet):
         description="Retrieves the last voting round id and its starting timestamp for fdc and ftso",
         responses=VotingRoundStatusSerializer,
     )
+    @method_decorator(cache_page(10))
     @decorators.action(detail=False, methods=["get"], url_path="status")
     def status(self, request, *args, **kwargs):
         self.serializer_class = VotingRoundStatusSerializer
