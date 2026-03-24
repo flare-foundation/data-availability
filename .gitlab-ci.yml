@@ -1,17 +1,5 @@
-# templates
-
 variables:
   UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
-
-.build_template: &build
-  stage: build
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
-  before_script:
-    - mkdir -p /kaniko/.docker
-    - echo "$CI_COMMIT_SHA" > COMMIT_HASH
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
 
 .test_template:
   stage: test
@@ -27,35 +15,9 @@ variables:
   rules:
     - if: $CI_COMMIT_BRANCH
 
-
 stages:
-  - build
   - test
   - release_flare_infra
-
-build_branches:
-  <<: *build
-  script:
-    - /kaniko/executor
-      --context $CI_PROJECT_DIR
-      --dockerfile $CI_PROJECT_DIR/Dockerfile
-      --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH
-      --cache=true
-      --cache-ttl=120h
-  only:
-    - branches
-
-build_tags:
-  <<: *build
-  script:
-    - /kaniko/executor
-      --context $CI_PROJECT_DIR
-      --dockerfile $CI_PROJECT_DIR/Dockerfile
-      --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
-      --cache=true
-      --cache-ttl=120h
-  only:
-    - tags
 
 test_ruff:
   extends: .test_template
