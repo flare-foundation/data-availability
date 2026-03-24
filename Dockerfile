@@ -34,7 +34,7 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY . /app
 
-ENV PATH="/opt/venv/bin:/app/scripts/bin:${PATH}"
+ENV PATH="/opt/venv/bin:/app/docker/bin:${PATH}"
 
 RUN chown -R 10001:10001 /app
 
