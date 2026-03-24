@@ -1,6 +1,20 @@
-<p align="left">
-  <a href="https://flare.network/" target="blank"><img src="https://content.flare.network/Flare-2.svg" width="400" height="300" alt="Flare Logo" /></a>
-</p>
+<!-- LOGO -->
+
+<div align="center">
+  <a href="https://flare.network/" target="blank">
+    <img src="https://content.flare.network/Flare-2.svg" width="300" alt="Flare Logo" />
+  </a>
+  <br />
+  Ensures protocol data is accessible and verifiable by network participants
+  <br />
+  <a href="#data-availability">About</a>
+  ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+  ·
+  <a href="SECURITY.md">Security</a>
+  ·
+  <a href="CHANGELOG.md">Changelog</a>
+</div>
 
 # Data Availability
 
@@ -27,9 +41,9 @@ If you have `SERVER_PROXY_PORT` set to `8000` in your `.env` file, you can find 
 
 ## Deployment
 
-Create a `.env` file from `.env.example.prod` and complete it with the necessary information. If you only want to use data availability for one protocol, comment out the other. 
+Create a `.env` file from `.env.example.prod` and complete it with the necessary information. If you only want to use data availability for one protocol, comment out the other.
 
-```
+```bash
 docker compose pull
 docker compose up -d
 ```
