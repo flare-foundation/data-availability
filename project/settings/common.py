@@ -34,26 +34,41 @@ DATABASES = {
 }
 
 # logging
+LOG_FORMAT = os.environ.get("LOG_FORMAT", "default")
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "caller": {
+            "()": "project.logging.CallerFilter",
+        },
+    },
     "formatters": {
         "default": {
-            "()": "django.utils.log.ServerFormatter",
-            "format": "[{server_time}] {levelname} {name}: {message}",
+            "format": "[{timestamp}] [{datetime}] {levelname} {caller}: {message}",
             "style": "{",
+        },
+        "json": {
+            "()": "pythonjsonlogger.json.JsonFormatter",
+            "fmt": "%(timestamp)s %(datetime)s %(levelname)s %(caller)s %(message)s",
+            "rename_fields": {
+                "levelname": "level",
+            },
         },
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stderr",
-            "formatter": "default",
+            "formatter": LOG_FORMAT,
+            "filters": ["caller"],
         },
     },
     "root": {
         "handlers": ["console"],
-        "level": os.environ.get("LOG_LEVEL", "INFO"),
+        "level": LOG_LEVEL,
     },
 }
 

@@ -22,6 +22,7 @@ dependencies = [
     "attrs==25.4.0",
     "cattrs==26.1.0",
     "gevent==25.9.1",
+    "python-json-logger==4.0.0",
 ]
 
 [dependency-groups]
