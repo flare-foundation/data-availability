@@ -1,2 +1,5 @@
 # change ruff line length from 120 to 88
 3f0b13a932bfda55d75f49b7dde49c9579f5a367
+
+# lint & format (version upgrade, forgotten, ...)
+cfe4580ae40fad27d11e2ed6362381c325e9689c
