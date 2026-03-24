@@ -1,15 +1,7 @@
 # templates
 
-.test_template: &test
-  stage: test
-  variables:
-    GIT_STRATEGY: none
-    RPC_URL: https://flare-api.flare.network/ext/C/rpc
-  image:
-    name: $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH
-    entrypoint: [""]
-  only:
-    - branches
+variables:
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
 
 .build_template: &build
   stage: build
@@ -20,6 +12,20 @@
     - mkdir -p /kaniko/.docker
     - echo "$CI_COMMIT_SHA" > COMMIT_HASH
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+
+.test_template:
+  stage: test
+  image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+  cache:
+    key:
+      files:
+        - uv.lock
+    paths:
+      - .cache/uv
+  before_script:
+    - uv sync --frozen
+  rules:
+    - if: $CI_COMMIT_BRANCH
 
 
 stages:
@@ -52,17 +58,14 @@ build_tags:
     - tags
 
 test_ruff:
-  <<: *test
+  extends: .test_template
   script:
-    - cd /app
-    - pip install -r dev-requirements.txt
-    - python -m ruff check .
-    - python -m ruff format --check
+    - uv run ruff check .
+    - uv run ruff format --check
 
 test_django:
-  stage: test
+  extends: .test_template
   variables:
-    GIT_STRATEGY: none
     POSTGRES_DB: "db"
     DB_NAME: "db"
     POSTGRES_USER: "dbuser"
@@ -75,21 +78,12 @@ test_django:
   services:
     - name: postgres:16
       alias: postgresdb
-  image:
-    name: $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH
-    entrypoint: [""]
-  only:
-    - branches
   script:
-    - cd /app
-    - pip install -r dev-requirements.txt
-    - coverage run --source="." manage.py test --settings=project.settings.ci_testing
-    - coverage xml
-    - mv coverage.xml $CI_PROJECT_DIR/
-    - mv testreport.xml $CI_PROJECT_DIR/
+    - uv run pytest --cov --cov-report=xml:coverage.xml --junit-xml=junit.xml .
+  coverage: /TOTAL\s+\d+\s+\d+\s+(\d+)%$/
   artifacts:
     reports:
-      junit: testreport.xml
+      junit: junit.xml
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
