@@ -1,6 +1,7 @@
 import copy
 import json
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models

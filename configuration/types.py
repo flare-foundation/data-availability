@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 from attrs import frozen
 from py_flare_common.fsp.epoch.epoch import RewardEpoch, VotingEpoch

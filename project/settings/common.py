@@ -1,12 +1,12 @@
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 # AFLABS PROJECT SETTINGS
 PROJECT_NAME = "Flare Data Availability Client"
 PROJECT_SETTINGS = os.environ.get("DJANGO_SETTINGS_MODULE", "project.settings.local")
 PROJECT_COMMIT_HASH = "local"
 PROJECT_VERSION = "local"
-PROJECT_BUILD_DATE = datetime.now(tz=timezone.utc)
+PROJECT_BUILD_DATE = datetime.now(tz=UTC)
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

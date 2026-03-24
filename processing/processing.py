@@ -1,5 +1,5 @@
 import logging
-from typing import Sequence
+from collections.abc import Sequence
 
 from configuration.types import ProtocolConfig
 from fsp.models import ProtocolMessageRelayed
@@ -17,9 +17,9 @@ class Processor:
         return [BaseClient.from_config(conf) for conf in config.providers]
 
     def fetch_merkle_tree(self, root: ProtocolMessageRelayed):
-        assert (
-            root.protocol_id == self.protocol_id
-        ), f"{self.protocol_id=} should match {root.protocol_id=}"
+        assert root.protocol_id == self.protocol_id, (
+            f"{self.protocol_id=} should match {root.protocol_id=}"
+        )
 
         errors = []
 

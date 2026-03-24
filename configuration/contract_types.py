@@ -25,7 +25,7 @@ def function_signature(function_name: str) -> str:
 class Event:
     name: str
     abi: ABIEvent
-    contract: "Contract"
+    contract: Contract
     signature: str = field(init=False)
 
     def __str__(self) -> str:
@@ -42,7 +42,7 @@ class Event:
 class Function:
     name: str
     abi: ABIFunction
-    contract: "Contract"
+    contract: Contract
     signature: str = field(init=False)
 
     def to_full_name(self):

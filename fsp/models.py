@@ -66,7 +66,7 @@ class ProtocolMessageRelayed(models.Model):
     @classmethod
     def process_event(
         cls, log_receipt: LogReceipt, event: Event, w3: Web3
-    ) -> "ProtocolMessageRelayed":
+    ) -> ProtocolMessageRelayed:
         try:
             ev = get_event_data(w3.codec, event.abi, log_receipt)
             return cls.from_decoded_dict(ev)

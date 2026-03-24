@@ -136,11 +136,13 @@ class FtsoProcessorTest(TestCase):
         for feed in self.data["tree"][1:]:
             filtered = list(
                 filter(
-                    lambda obj: obj.voting_round_id == feed["votingRoundId"]
-                    and obj.feed_id == feed["id"][2:]
-                    and obj.value == feed["value"]
-                    and obj.turnout_bips == feed["turnoutBIPS"]
-                    and obj.decimals == feed["decimals"],
+                    lambda obj: (
+                        obj.voting_round_id == feed["votingRoundId"]
+                        and obj.feed_id == feed["id"][2:]
+                        and obj.value == feed["value"]
+                        and obj.turnout_bips == feed["turnoutBIPS"]
+                        and obj.decimals == feed["decimals"]
+                    ),
                     feed_results,
                 )
             )

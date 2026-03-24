@@ -126,11 +126,13 @@ class FdcProcessorTest(TestCase):
         for attestation in self.data["Attestations"]:
             filtered = list(
                 filter(
-                    lambda obj: obj.voting_round_id == attestation["roundId"]
-                    and obj.request_hex == attestation["request"]
-                    and obj.response_hex == attestation["response"]
-                    and obj.abi == attestation["abi"]
-                    and obj.proof == attestation["proof"],
+                    lambda obj: (
+                        obj.voting_round_id == attestation["roundId"]
+                        and obj.request_hex == attestation["request"]
+                        and obj.response_hex == attestation["response"]
+                        and obj.abi == attestation["abi"]
+                        and obj.proof == attestation["proof"]
+                    ),
                     attestation_results,
                 )
             )
