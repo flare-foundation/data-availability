@@ -25,7 +25,7 @@ services:
     #   - "127.0.0.1:${DB_PROXY_PORT}:5432"
     # uncomment to persist db data between downs
     # volumes:
-    #  - ./db-data/:/var/lib/postgresql/data
+    #  - ./db-data/:/var/lib/postgresql
     # uncomment for query logging
     # command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
 
