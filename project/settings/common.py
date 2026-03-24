@@ -141,6 +141,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "project.debug.debug_error_middleware",
 ]
 
 ROOT_URLCONF = "project.urls"
@@ -219,6 +220,9 @@ for cls in [QuerySet]:
     cls.__class_getitem__ = classmethod(lambda cls, *args, **kwargs: cls)  # type: ignore [attr-defined]
 
 # END OF DEPENDENCY SETTINGS
+
+# when set, api key header value will be included in debug logs
+DEBUG_LOG_API_KEY = os.environ.get("DEBUG_LOG_API_KEY", "false") == "true"
 
 _HISTORY_KEEP_ROUNDS = os.environ.get("HISTORY_KEEP_ROUNDS", "")
 try:
