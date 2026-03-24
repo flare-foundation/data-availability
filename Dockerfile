@@ -19,11 +19,10 @@ RUN if [ "$DEV" = "true" ]; then \
 FROM python:3.14-slim AS final
 
 ARG DEV=false
-RUN if [ "$DEV" = "true" ]; then \
-      apt-get update && \
-      apt-get install -y --no-install-recommends gosu && \
-      rm -rf /var/lib/apt/lists/*; \
-    fi
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl \
+      $([ "$DEV" = "true" ] && echo gosu) && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
