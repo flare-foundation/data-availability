@@ -1,4 +1,4 @@
-FROM python:3.14-slim AS builder
+FROM python:3.14-slim-trixie@sha256:fb83750094b46fd6b8adaa80f66e2302ecbe45d513f6cece637a841e1025b4ca AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.10.8 /uv /uvx /bin/
 
@@ -16,7 +16,7 @@ RUN if [ "$DEV" = "true" ]; then \
       uv sync --locked --no-dev; \
     fi
 
-FROM python:3.14-slim AS final
+FROM python:3.14-slim-trixie@sha256:fb83750094b46fd6b8adaa80f66e2302ecbe45d513f6cece637a841e1025b4ca AS final
 
 ARG DEV=false
 RUN apt-get update && \
