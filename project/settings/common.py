@@ -73,35 +73,40 @@ LOGGING = {
 }
 
 # caching
-REDIS_HOST = os.environ.get("REDIS_HOST", "redis")
-REDIS_PORT = os.environ.get("REDIS_PORT", 6379)
+REDIS_HOST = os.environ.get("REDIS_HOST")
+REDIS_PORT = os.environ.get("REDIS_PORT")
 REDIS_USERNAME = os.environ.get("REDIS_USERNAME")
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
 
-if REDIS_USERNAME is not None and REDIS_PASSWORD is not None:
+_locmem_cache = {
+    "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    "LOCATION": "fallback",
+}
+
+_redis_configured = REDIS_HOST and REDIS_PORT
+
+_redis_location = ""
+if _redis_configured and REDIS_USERNAME and REDIS_PASSWORD:
     _redis_location = (
         f"redis://{REDIS_USERNAME}:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}"
     )
-else:
+elif _redis_configured:
     _redis_location = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 
-CACHES = {
-    "default": {
-        "BACKEND": "project.cache.FallbackCache",
-    },
-    "redis": {
+CACHES = {"fallback": _locmem_cache}
+
+if _redis_configured:
+    CACHES["default"] = {"BACKEND": "project.cache.FallbackCache"}
+    CACHES["redis"] = {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": _redis_location,
         "OPTIONS": {
             "socket_connect_timeout": 2,
             "socket_timeout": 2,
         },
-    },
-    "fallback": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "fallback",
-    },
-}
+    }
+else:
+    CACHES["default"] = _locmem_cache
 
 # Start app in debug mode. This shows more detailed error messages. Should not be used
 # in production
