@@ -1,7 +1,7 @@
 import copy
 import json
 from collections.abc import Callable
-from typing import Any
+from typing import Any, ClassVar
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -61,10 +61,18 @@ def dict_transform_typescript(data: dict[str, Any]) -> dict[str, Any]:
 
 class AttestationResult(models.Model):
     voting_round_id = models.PositiveBigIntegerField(db_index=True)
-    request_hex = models.CharField(db_index=True)
+    request_hex = models.CharField()
     response_hex = models.CharField()
     abi = models.CharField()  # JSON
     proof = ArrayField(models.CharField())
+
+    class Meta:
+        indexes: ClassVar = [
+            models.Index(
+                fields=["request_hex", "-voting_round_id"],
+                name="fdc_attestation_req_round_idx",
+            ),
+        ]
 
     def __str__(self):
         return f"Round {self.voting_round_id} - {self.request_hex[:8]}...{self.request_hex[-8:]}"

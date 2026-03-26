@@ -9,12 +9,20 @@ from processing.utils import un_prefix_0x
 
 
 class FeedResult(models.Model):
-    voting_round_id = models.PositiveBigIntegerField(db_index=True)
+    voting_round_id = models.PositiveBigIntegerField()
     feed_id = models.CharField(max_length=42)
 
     value = models.BigIntegerField()
     turnout_bips = models.PositiveBigIntegerField()
     decimals = models.IntegerField()
+
+    class Meta:
+        indexes: ClassVar = [
+            models.Index(
+                fields=["voting_round_id", "feed_id"],
+                name="ftso_feed_round_feedid_idx",
+            ),
+        ]
 
     # TODO: get this from contract versioning
     STRUCT_ABI: ClassVar = {
