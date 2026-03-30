@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-python manage.py migrate
+if [[ "${DJANGO_AUTO_MIGRATE:-true}" == "true" ]]; then
+	python manage.py migrate
+fi
 
 default_flags=(
 	-w 2
