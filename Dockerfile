@@ -1,3 +1,4 @@
+#checkov:skip=CKV_DOCKER_2: Health check is handled by container orchestrator
 FROM python:3.14-slim-trixie@sha256:fb83750094b46fd6b8adaa80f66e2302ecbe45d513f6cece637a841e1025b4ca AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.10.8 /uv /uvx /bin/
@@ -19,9 +20,13 @@ RUN if [ "$DEV" = "true" ]; then \
 FROM python:3.14-slim-trixie@sha256:fb83750094b46fd6b8adaa80f66e2302ecbe45d513f6cece637a841e1025b4ca AS final
 
 ARG DEV=false
+#hadolint ignore=DL3008
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl \
-      $([ "$DEV" = "true" ] && echo gosu) && \
+    if [ "$DEV" = "true" ]; then \
+      apt-get install -y --no-install-recommends curl gosu; \
+    else \
+      apt-get install -y --no-install-recommends curl; \
+    fi && \
     rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONDONTWRITEBYTECODE=1
