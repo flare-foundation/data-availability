@@ -47,11 +47,11 @@ LOGGING = {
     },
     "formatters": {
         "default": {
-            "format": "[{timestamp}] [{datetime}] {levelname} {caller}: {message}",
+            "format": "[{timestamp}] [{datetime}] {levelname} {trace_context}{caller}: {message}",
             "style": "{",
         },
         "json": {
-            "()": "pythonjsonlogger.json.JsonFormatter",
+            "()": "project.logging.JsonFormatter",
             "fmt": "%(timestamp)s %(datetime)s %(levelname)s %(caller)s %(message)s",
             "rename_fields": {
                 "levelname": "level",

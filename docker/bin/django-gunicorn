@@ -5,6 +5,7 @@ if [[ "${DJANGO_AUTO_MIGRATE:-true}" == "true" ]]; then
 fi
 
 default_flags=(
+	-c gunicorn.conf.py
 	-w 2
 	-k gthread
 	-b 0.0.0.0:8000
