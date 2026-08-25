@@ -72,6 +72,12 @@ class Expectation(models.Model):
     # The hard backstop, independent of any on-chain condition. Without one, an
     # extension whose contract stalls leaks storage on every node forever.
     expires_at = models.DateTimeField(db_index=True)
+    # Per-class parameters the collector and the gate need, carried from the
+    # trigger. Opaque to everything here on purpose: a new message class must
+    # not need a migration to record what its own gate requires. For a TEE
+    # action result these are the machine and proxy identities the event named,
+    # which is why the gate needs no registry lookup and no historical state.
+    params = models.JSONField(default=dict, blank=True)
 
     class Meta:
         indexes = [  # noqa: RUF012

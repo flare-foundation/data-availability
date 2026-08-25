@@ -71,5 +71,28 @@ services:
       django:
         condition: service_healthy
 
+  # The DAL. Both services are optional: without CCHAIN_DB_HOST there is no
+  # indexer to read triggers from, and this service collects nothing.
+  collect-dal:
+    <<: *django
+    command: python manage.py collect_dal --contract ${DAL_INSTRUCTIONS_CONTRACT} --from-block ${DAL_FROM_BLOCK:-0}
+    depends_on:
+      db:
+        condition: service_healthy
+      django:
+        condition: service_healthy
+
+  # Separate from delete-history on purpose: that prunes FTSO and FDC rounds by
+  # voting round, this prunes artifacts by their own lifecycle, and the two must
+  # not share a schedule.
+  dal-delete-history:
+    <<: *django
+    command: python manage.py dal_delete_history
+    depends_on:
+      db:
+        condition: service_healthy
+      django:
+        condition: service_healthy
+
 volumes:
   pg_data:

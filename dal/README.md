@@ -21,6 +21,9 @@ in the btc-planning repository; this app is phase 2 of it.
 | `collector.py` | the tick: open expectations, fetched, gated, recorded |
 | `retention.py` | eviction by lifecycle, with a mandatory max-age backstop |
 | `chain/indexer.py` | reading triggers from the c-chain indexer |
+| `chain/triggers.py` | turning one log into the expectations it implies |
+| `chain/abi.py` | the events decoded, as literals, with their topics |
+| `management/commands/` | `collect_dal`, `dal_delete_history` |
 | `models.py` | expectations, artifacts, and the set-valued secondary index |
 
 ## Running the tests
@@ -72,3 +75,31 @@ uv run python manage.py makemigrations --check --dry-run --skip-checks   # no dr
 
 **The vectors come from Go.** See [`tests/README.md`](tests/README.md) — that is
 the part of this app most worth understanding before changing it.
+
+
+## Running it
+
+Two long-running processes, shaped like `process_ftso_data` and
+`delete_history` and deployed the same way — one container each, same image,
+differing only in command:
+
+```bash
+python manage.py collect_dal --contract 0x… --from-block 0
+python manage.py dal_delete_history
+```
+
+`docker-compose.yaml` carries both as `collect-dal` and `dal-delete-history`.
+They are **optional**: without `CCHAIN_DB_HOST` there is no indexer to read
+triggers from and the collector has nothing to do.
+
+`--once` runs a single tick and exits, which is what to reach for when
+debugging; the default loops until killed.
+
+**The c-chain indexer must be configured to collect the instruction contract's
+logs.** It filters before this service sees anything, so an address missing
+from its `collect_logs` yields an indexer that is healthy, fresh and silent —
+and a DAL that reports a quiet chain.
+
+`dal_delete_history` is deliberately separate from the existing
+`delete_history`. That one prunes FTSO and FDC rounds by voting round; this
+prunes artifacts by their own lifecycle, and the two must not share a schedule.
