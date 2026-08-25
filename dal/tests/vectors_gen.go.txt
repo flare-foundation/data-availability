@@ -1,0 +1,100 @@
+// vecgen emits golden vectors for the DAL G2 gate.
+//
+// The vectors are produced by the SAME Go code the TEE stack signs with, so a
+// Python gate that reproduces them is checking against the producer rather
+// than against its own assumptions.
+package main
+
+import (
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/flare-foundation/go-flare-common/pkg/signing"
+	"github.com/flare-foundation/tee-node/pkg/types"
+)
+
+type vector struct {
+	Name          string `json:"name"`
+	Prefix        string `json:"prefix"`
+	ChainID       uint64 `json:"chainId"`
+	DataHash      string `json:"dataHash"`
+	SignHash      string `json:"signHash"`
+	Signature     string `json:"signature"`
+	Signer        string `json:"signer"`
+	ActionID      string `json:"actionId,omitempty"`
+	SubmissionTag string `json:"submissionTag,omitempty"`
+	Status        *uint8 `json:"status,omitempty"`
+	Data          string `json:"data,omitempty"`
+}
+
+func main() {
+	key, err := crypto.HexToECDSA("4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318")
+	if err != nil {
+		panic(err)
+	}
+	signer := crypto.PubkeyToAddress(key.PublicKey)
+
+	const chainID = 31337
+
+	mk := func(name string, prefix signing.Prefix, dataHash [32]byte) vector {
+		signHash, err := signing.NewPayload(prefix, chainID, dataHash).Hash()
+		if err != nil {
+			panic(err)
+		}
+		sig, err := crypto.Sign(accounts.TextHash(signHash[:]), key)
+		if err != nil {
+			panic(err)
+		}
+		return vector{
+			Name:      name,
+			Prefix:    "0x" + hex.EncodeToString(prefix[:]),
+			ChainID:   chainID,
+			DataHash:  "0x" + hex.EncodeToString(dataHash[:]),
+			SignHash:  "0x" + hex.EncodeToString(signHash[:]),
+			Signature: "0x" + hex.EncodeToString(sig),
+			Signer:    signer.Hex(),
+		}
+	}
+
+	// An action result, hashed exactly as tee-node hashes it.
+	status := uint8(1)
+	ar := &types.ActionResult{
+		ID:            common.HexToHash("0xa1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90"),
+		SubmissionTag: "threshold",
+		Status:        status,
+		Data:          []byte(`{"signatures":["deadbeef"]}`),
+	}
+	arHash := common.BytesToHash(ar.Hash())
+
+	v1 := mk("tee_action_result", signing.TEEActionResult, arHash)
+	v1.ActionID = ar.ID.Hex()
+	v1.SubmissionTag = string(ar.SubmissionTag)
+	v1.Status = &status
+	v1.Data = "0x" + hex.EncodeToString(ar.Data)
+
+	v2 := mk("proxy_action_result", signing.ProxyActionResult, arHash)
+	v2.ActionID = ar.ID.Hex()
+	v2.SubmissionTag = string(ar.SubmissionTag)
+	v2.Status = &status
+	v2.Data = "0x" + hex.EncodeToString(ar.Data)
+
+	v3 := mk("tee_vote_hash", signing.TEEVoteHash,
+		common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111"))
+
+	// A CSP proposal: the envelope's own keccak is the payload's dataHash.
+	envelope := []byte("not a real envelope, but hashed the same way")
+	v4 := mk("csp_proposal", signing.CSPProposal, crypto.Keccak256Hash(envelope))
+	v4.Data = "0x" + hex.EncodeToString(envelope)
+
+	out, err := json.MarshalIndent([]vector{v1, v2, v3, v4}, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintln(os.Stdout, string(out))
+}
