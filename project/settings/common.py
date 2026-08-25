@@ -156,6 +156,12 @@ DAL_RPC_URL = os.environ.get("DAL_RPC_URL", os.environ.get("RPC_URL", ""))
 _DAL_CHAIN_ID = os.environ.get("DAL_CHAIN_ID", "")
 DAL_CHAIN_ID = int(_DAL_CHAIN_ID) if _DAL_CHAIN_ID else None
 
+# How long an expectation stays open before it is closed as UNMET. Configurable
+# because it is a statement about how patient a deployment is with its origins,
+# not a constant -- and because a harness that must observe the give-up path
+# cannot wait half an hour to see it.
+DAL_GIVE_UP_MINUTES = int(os.environ.get("DAL_GIVE_UP_MINUTES", "30"))
+
 # Origins on the local network are refused unless a deployment says otherwise.
 # The end-to-end harness runs every TEE machine on loopback and needs this on;
 # a public deployment must leave it off. Dangerous prefixes -- metadata

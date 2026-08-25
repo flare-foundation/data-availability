@@ -9,6 +9,7 @@ exists.
 
 import logging
 import time
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -72,6 +73,7 @@ class Command(BaseCommand):
                 origin_url=lambda expectation: expectation.origin,
                 index_keys=_index_keys,
                 allow_private=settings.DAL_ALLOW_PRIVATE_ORIGINS,
+                give_up_after=timedelta(minutes=settings.DAL_GIVE_UP_MINUTES),
             )
 
             if options["once"]:
