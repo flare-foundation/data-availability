@@ -11,7 +11,7 @@ import logging
 import time
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from dal.chain import indexer as indexer_module
 from dal.chain.indexer import HistoryGap
@@ -103,12 +103,25 @@ def _index_keys(expectation):
 def _chain_id() -> int:
     """The chain the signatures are bound to.
 
-    Read through the same configuration everything else uses, so a DAL pointed
-    at one network cannot admit artifacts signed for another -- chainId is
-    inside the signed payload, and this is the value it is checked against.
+    ``chainId`` is inside every signed payload, so this is the value that stops
+    an artifact signed for one network being admitted on another. Getting it
+    wrong fails closed -- every signature simply stops verifying -- which is the
+    right direction but an unhelpful error, hence the explicit message here.
+
+    Deliberately NOT read through ``configuration.config``. That builds the
+    whole FTSO/FDC configuration at import: resolving Relay through
+    ``FlareContractRegistry``, choosing epoch factories, parsing provider lists,
+    and refusing any chain outside the four public ones. The DAL needs none of
+    it, and a local or test chain is a perfectly reasonable thing for it to run
+    against.
     """
+    if settings.DAL_CHAIN_ID is not None:
+        return settings.DAL_CHAIN_ID
+    if not settings.DAL_RPC_URL:
+        raise CommandError(
+            "set DAL_CHAIN_ID, or DAL_RPC_URL/RPC_URL so it can be read: "
+            "without it no signature will verify"
+        )
     from web3 import Web3
 
-    from configuration.config import config
-
-    return Web3(Web3.HTTPProvider(config.rpc_url)).eth.chain_id
+    return Web3(Web3.HTTPProvider(settings.DAL_RPC_URL)).eth.chain_id

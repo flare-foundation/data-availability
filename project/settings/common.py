@@ -145,6 +145,17 @@ CCHAIN_INDEXER = {
     "PASSWORD": os.environ.get("CCHAIN_DB_PASSWORD", ""),
 }
 
+# The chain the DAL's signature checks are bound to. chainId is INSIDE every
+# signed payload, so this is the value that stops artifacts signed for one
+# network being admitted on another. Read straight from DAL_RPC_URL (falling
+# back to RPC_URL) rather than through configuration.config: that builds the
+# whole FTSO/FDC configuration -- Relay resolution, epoch factories, provider
+# lists -- and refuses any chain outside the four public ones, none of which the
+# DAL needs or should be constrained by.
+DAL_RPC_URL = os.environ.get("DAL_RPC_URL", os.environ.get("RPC_URL", ""))
+_DAL_CHAIN_ID = os.environ.get("DAL_CHAIN_ID", "")
+DAL_CHAIN_ID = int(_DAL_CHAIN_ID) if _DAL_CHAIN_ID else None
+
 # Origins on the local network are refused unless a deployment says otherwise.
 # The end-to-end harness runs every TEE machine on loopback and needs this on;
 # a public deployment must leave it off. Dangerous prefixes -- metadata
