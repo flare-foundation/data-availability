@@ -16,6 +16,7 @@ from dal.gate.result import Admitted, Refused, Verdict
 from dal.gate.signing import (
     PROXY_ACTION_RESULT,
     TEE_ACTION_RESULT,
+    TEE_VOTE_HASH,
     SignatureError,
     action_result_hash,
     payload_hash,
@@ -23,7 +24,7 @@ from dal.gate.signing import (
 )
 from dal.keys import action_result_key
 
-__all__ = ["gate_action_result"]
+__all__ = ["gate_action_result", "gate_vote"]
 
 
 def _unhex(value: Any, field: str) -> bytes:
@@ -107,3 +108,48 @@ def gate_action_result(
     return Admitted(
         key=action_result_key(instruction_id, tee_id, submission_tag), raw=raw
     )
+
+
+def gate_vote(data: bytes, *, chain_id: int, tee_id: str) -> Refused | None:
+    """Gate the RewardingData carried by an `end` result. ``None`` means admitted.
+
+    The vote is signed under a DIFFERENT preimage from the result that carries
+    it: the dataHash is ``VoteSequence.voteHash`` itself, not the hash of the
+    action result. So an `end` result carries two independent signatures over
+    two different things, and checking one says nothing about the other.
+
+    Not a Verdict, because a vote is not an artifact of its own -- it lives
+    inside an action result and inherits that result's key. This is the
+    second half of gating one `end` body.
+    """
+    try:
+        payload = json.loads(data)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return Refused(f"rewarding data is not JSON: {exc}")
+    if not isinstance(payload, dict):
+        return Refused("rewarding data is not a JSON object")
+
+    sequence = payload.get("voteSequence")
+    if not isinstance(sequence, dict):
+        return Refused("rewarding data carries no voteSequence")
+
+    try:
+        vote_hash = _unhex(sequence.get("voteHash"), "voteHash")
+        signature = _unhex(payload.get("signature"), "signature")
+    except ValueError as exc:
+        return Refused(str(exc))
+
+    if len(vote_hash) != 32:
+        return Refused(f"voteHash is {len(vote_hash)} bytes, not 32")
+
+    claimed = sequence.get("teeId")
+    if isinstance(claimed, str) and claimed.lower() != tee_id.lower():
+        # The vote names its own machine. A body claiming to be another
+        # machine's vote is refused before the signature is even considered.
+        return Refused(f"vote names machine {claimed}, expected {tee_id}")
+
+    try:
+        verify(payload_hash(TEE_VOTE_HASH, chain_id, vote_hash), signature, tee_id)
+    except SignatureError as exc:
+        return Refused(f"vote signature: {exc}")
+    return None

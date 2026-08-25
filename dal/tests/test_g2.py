@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from dal.gate.g2 import gate_action_result
+from dal.gate.g2 import gate_action_result, gate_vote
 from dal.gate.result import Admitted, Refused
 from dal.keys import action_result_key
 
@@ -175,3 +175,73 @@ def test_a_body_with_no_result_is_refused():
     verdict = gate(json.dumps({"signature": TEE["signature"]}).encode())
     assert isinstance(verdict, Refused)
     assert "no result" in verdict.reason
+
+
+class TestVote:
+    """RewardingData, signed under TEE_VOTE_HASH over voteHash itself.
+
+    Confirmed against the producer rather than assumed: tee-node signs
+    `Payload(TEE_VOTE_HASH, chainID, voteHash)` with the machine's own signer,
+    and tee-proxy's integration suite asserts that signature recovers to the
+    machine's TeeID.
+    """
+
+    VOTE = VECTORS["tee_vote_hash"]
+
+    def data(self, **overrides) -> bytes:
+        payload = {
+            "voteSequence": {
+                "voteHash": self.VOTE["dataHash"],
+                "teeId": self.VOTE["signer"],
+            },
+            "signature": self.VOTE["signature"],
+        }
+        for key, value in overrides.items():
+            if key in ("voteHash", "teeId"):
+                payload["voteSequence"][key] = value
+            else:
+                payload[key] = value
+        return json.dumps(payload).encode()
+
+    def gate(self, data: bytes, tee_id=None):
+        return gate_vote(
+            data,
+            chain_id=self.VOTE["chainId"],
+            tee_id=tee_id or self.VOTE["signer"],
+        )
+
+    def test_a_correctly_signed_vote_is_admitted(self):
+        assert self.gate(self.data()) is None
+
+    def test_a_vote_naming_another_machine_is_refused(self):
+        other = "0x" + "00" * 19 + "01"
+        verdict = self.gate(self.data(teeId=other))
+        assert isinstance(verdict, Refused)
+        assert "names machine" in verdict.reason
+
+    def test_a_vote_signed_by_another_machine_is_refused(self):
+        verdict = self.gate(self.data(teeId=None), tee_id="0x" + "00" * 19 + "01")
+        assert isinstance(verdict, Refused)
+
+    def test_a_tampered_vote_hash_is_refused(self):
+        verdict = self.gate(self.data(voteHash="0x" + "22" * 32))
+        assert isinstance(verdict, Refused)
+        assert "vote signature" in verdict.reason
+
+    def test_the_result_signature_does_not_pass_as_a_vote_signature(self):
+        # The two live in one `end` body and are signed over different things
+        # under different prefixes. Accepting one for the other would let a
+        # machine's result signature stand in for a vote it never cast.
+        verdict = self.gate(self.data(signature=TEE["signature"]))
+        assert isinstance(verdict, Refused)
+        assert "vote signature" in verdict.reason
+
+    def test_a_body_without_a_vote_sequence_is_refused(self):
+        verdict = self.gate(json.dumps({"signature": self.VOTE["signature"]}).encode())
+        assert isinstance(verdict, Refused)
+        assert "voteSequence" in verdict.reason
+
+    def test_a_short_vote_hash_is_refused(self):
+        verdict = self.gate(self.data(voteHash="0xdeadbeef"))
+        assert isinstance(verdict, Refused)
+        assert "not 32" in verdict.reason
