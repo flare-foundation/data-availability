@@ -17,6 +17,7 @@ dependencies = [
     "django-prometheus==2.4.1",
     "sentry-sdk==2.53.0",
     # blockchain
+    "urllib3==2.6.3",
     "web3==7.14.1",
     "py-flare-common==0.1.6",
     # other

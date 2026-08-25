@@ -383,6 +383,7 @@ dependencies = [
     { name = "python-json-logger" },
     { name = "redis" },
     { name = "sentry-sdk" },
+    { name = "urllib3" },
     { name = "web3" },
 ]
 
@@ -414,6 +415,7 @@ requires-dist = [
     { name = "python-json-logger", specifier = "==4.0.0" },
     { name = "redis", specifier = "==6.2.0" },
     { name = "sentry-sdk", specifier = "==2.53.0" },
+    { name = "urllib3", specifier = "==2.6.3" },
     { name = "web3", specifier = "==7.14.1" },
 ]
 
