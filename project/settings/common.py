@@ -134,6 +134,25 @@ INSTALLED_APPS = [
     "dal.apps.DalConfig",
 ]
 
+# The c-chain indexer this service READS from. Deliberately not a Django
+# database alias: the schema is managed by gorm in another repository, and an
+# alias would invite `migrate` and the test runner to create and own it.
+CCHAIN_INDEXER = {
+    "HOST": os.environ.get("CCHAIN_DB_HOST", ""),
+    "PORT": int(os.environ.get("CCHAIN_DB_PORT", "3306")),
+    "NAME": os.environ.get("CCHAIN_DB_NAME", ""),
+    "USER": os.environ.get("CCHAIN_DB_USER", ""),
+    "PASSWORD": os.environ.get("CCHAIN_DB_PASSWORD", ""),
+}
+
+# Origins on the local network are refused unless a deployment says otherwise.
+# The end-to-end harness runs every TEE machine on loopback and needs this on;
+# a public deployment must leave it off. Dangerous prefixes -- metadata
+# addresses, multicast -- stay blocked either way.
+DAL_ALLOW_PRIVATE_ORIGINS = (
+    os.environ.get("DAL_ALLOW_PRIVATE_ORIGINS", "").lower() == "true"
+)
+
 LANGUAGE_CODE = "en-us"
 
 MEDIA_URL = "/media/"

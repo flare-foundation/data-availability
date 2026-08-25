@@ -17,6 +17,11 @@ in the btc-planning repository; this app is phase 2 of it.
 | `gate/g2.py` | admit an artifact because a registered identity signed it |
 | `gate/result.py` | `Admitted` / `Refused` — a refusal is terminal and alarmable, not a retry |
 | `keys.py` | how artifacts are named: content keys and coordinate keys |
+| `fetch.py` | the fetch boundary — every origin URL is attacker-controlled |
+| `collector.py` | the tick: open expectations, fetched, gated, recorded |
+| `retention.py` | eviction by lifecycle, with a mandatory max-age backstop |
+| `chain/indexer.py` | reading triggers from the c-chain indexer |
+| `models.py` | expectations, artifacts, and the set-valued secondary index |
 
 ## Running the tests
 
@@ -34,6 +39,20 @@ need one; any Postgres will do:
 ```bash
 export DB_NAME=db DB_USER=db DB_PASSWORD= DB_HOST=127.0.0.1 DB_PORT=5432
 ```
+
+The c-chain indexer tests need a MySQL carrying that indexer's schema, and
+**skip cleanly when one is not configured** — a machine without it should not be
+told the reader is broken:
+
+```bash
+export CCHAIN_DB_HOST=127.0.0.1 CCHAIN_DB_PORT=13306 \
+       CCHAIN_DB_NAME=flare_csp_indexer CCHAIN_DB_USER=root CCHAIN_DB_PASSWORD=
+```
+
+Create the schema with the indexer's **own** migrator rather than transcribing
+it — `database.ConnectAndInitialize` against an empty database is enough, and it
+is the only way a fixture cannot drift from the thing it stands in for. The
+end-to-end harness (`csp-e2e`) already runs exactly this MySQL on port 13306.
 
 ## Migrations
 
