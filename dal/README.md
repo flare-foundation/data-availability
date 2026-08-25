@@ -20,19 +20,36 @@ in the btc-planning repository; this app is phase 2 of it.
 
 ## Running the tests
 
-The project targets Python 3.14 and `uv`. The `dal` package deliberately depends
-on nothing Django-specific, so its tests run under a plain virtualenv with four
-packages:
-
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install eth-utils eth-keys eth-abi "eth-hash[pycryptodome]" pytest
-PYTHONPATH=. .venv/bin/python -m pytest dal/tests -q -c /dev/null
+uv sync
+uv run pytest                 # needs a Postgres for the model tests
+uv run pytest dal/tests/test_signing.py dal/tests/test_keys.py dal/tests/test_g2.py
 ```
 
-`-c /dev/null` skips the project's pytest configuration, which loads Django
-settings this app does not need. Under the project's own toolchain, plain
-`pytest dal/tests` works and is what CI should run.
+The gate and the key derivation depend on nothing Django-specific and need no
+database — deliberately, and worth keeping that way, because a gate that needs a
+database and a chain to test is a gate that gets tested less. The model tests do
+need one; any Postgres will do:
+
+```bash
+export DB_NAME=db DB_USER=db DB_PASSWORD= DB_HOST=127.0.0.1 DB_PORT=5432
+```
+
+## Migrations
+
+`manage.py` cannot run offline: `configuration/config.py` builds its
+`Configuration` at import time and refuses to start without an `RPC_URL`
+pointing at a recognised Flare chain, because it resolves `Relay` through
+`FlareContractRegistry`. System checks import the URL conf, which imports that
+config, so every management command inherits the requirement.
+
+Migrations do not actually need any of it, so:
+
+```bash
+uv run python manage.py makemigrations dal --skip-checks
+uv run python manage.py migrate --skip-checks
+uv run python manage.py makemigrations --check --dry-run --skip-checks   # no drift
+```
 
 **The vectors come from Go.** See [`tests/README.md`](tests/README.md) — that is
 the part of this app most worth understanding before changing it.

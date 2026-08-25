@@ -131,6 +131,7 @@ INSTALLED_APPS = [
     "ftso.apps.FtsoConfig",
     "fsp.apps.FspConfig",
     "fdc.apps.FdcConfig",
+    "dal.apps.DalConfig",
 ]
 
 LANGUAGE_CODE = "en-us"
