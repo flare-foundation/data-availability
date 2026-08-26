@@ -13,6 +13,7 @@ than correctness.
 """
 
 import logging
+from collections import OrderedDict
 from dataclasses import dataclass
 
 from web3 import Web3
@@ -91,13 +92,20 @@ class Submitters:
     value the caller cannot lie about.
     """
 
+    # Bounded. The collector is a long-running process and every commitment it
+    # sees adds an entry, so an unbounded map is a slow leak in the one
+    # component that must stay up. Senders are cheap to re-read and a miss costs
+    # one RPC call.
+    CACHE_LIMIT = 4096
+
     def __init__(self, rpc_url: str):
         self._w3 = Web3(Web3.HTTPProvider(rpc_url))
-        self._cache: dict[str, str] = {}
+        self._cache: OrderedDict[str, str] = OrderedDict()
 
     def __call__(self, transaction_hash: str) -> str | None:
         key = transaction_hash.removeprefix("0x").lower()
         if key in self._cache:
+            self._cache.move_to_end(key)
             return self._cache[key]
         try:
             tx = self._w3.eth.get_transaction("0x" + key)
@@ -106,4 +114,6 @@ class Submitters:
             return None
         sender = tx["from"]
         self._cache[key] = sender
+        while len(self._cache) > self.CACHE_LIMIT:
+            self._cache.popitem(last=False)
         return sender
