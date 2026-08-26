@@ -164,3 +164,152 @@ def _decode(row: LogRow) -> dict:
             "logIndex": row.log_index,
         },
     )
+
+
+# The op type and command an attestation request is dispatched under. Both are
+# names right-padded to 32 bytes — `op.Type.Hash()` is a UTF-8 pad, not a
+# keccak, despite the name.
+#
+# The VALUES are the trap: the identifiers are "F_FDC2" and "PROVE", not "FDC2"
+# and "Prove". Getting them wrong produces a filter that matches nothing, which
+# reads exactly like a chain on which no proposal was ever requested — and cost
+# a run to notice, because discovery kept reporting logs it had read and
+# expectations it had not created.
+OP_FDC2 = b"F_FDC2".ljust(32, b"\x00")
+OP_PROVE = b"PROVE".ljust(32, b"\x00")
+
+
+def discover_proposal_requests(
+    reader: IndexerReader,
+    *,
+    contract_address: str,
+    from_block: int,
+    submitter_of,
+    to_block: int | None = None,
+    ttl: timedelta = timedelta(hours=6),
+    limit: int = 1000,
+) -> DiscoveryReport:
+    """Create proposal expectations from the requests proposers committed.
+
+    **The trigger is free.** A proposer's FDC2 attestation request becomes a
+    `TeeInstructionsSent` instruction, which is the event already indexed for
+    machine results — so a proposal expectation is a message decoded from a
+    stream the node is reading anyway, not a second source to watch.
+
+    ``submitter_of(transaction_hash)`` answers who actually sent the
+    transaction. That is deliberately NOT taken from the event: the instruction
+    carries a ``claimBackAddress`` chosen by whoever called the hub, so it is a
+    hint and cannot establish authorship. The transaction's sender can, and it
+    is the whole basis of provenance under commit-then-publish.
+    """
+    rows, window = reader.logs(
+        address=contract_address,
+        topic0=topic0(TEE_INSTRUCTIONS_SENT),
+        from_block=from_block,
+        to_block=to_block,
+        limit=limit,
+    )
+
+    report = DiscoveryReport(
+        logs_read=len(rows),
+        through_block=window.last_indexed
+        if to_block is None
+        else min(to_block, window.last_indexed),
+        indexer_lag=window.lag,
+    )
+
+    now = timezone.now()
+    for row in rows:
+        try:
+            event = _decode(row)
+        except Exception as exc:
+            logger.warning(
+                "DAL: undecodable instruction at block %d: %s", row.block_number, exc
+            )
+            continue
+
+        args = event["args"]
+        if args["opType"] != OP_FDC2 or args["opCommand"] != OP_PROVE:
+            continue  # not an attestation request
+
+        parsed = _proposal_request(args["message"])
+        if parsed is None:
+            continue  # some other attestation type
+
+        proposer = submitter_of(row.transaction_hash)
+        if not proposer:
+            logger.warning(
+                "DAL: no sender for the request in tx %s; provenance cannot be established",
+                row.transaction_hash,
+            )
+            continue
+
+        report.expectations_created += _proposal_expectation(
+            parsed, proposer=proposer, block=row.block_number, now=now, ttl=ttl
+        )
+
+    logger.info("DAL proposal discovery: %s", report)
+    return report
+
+
+def _proposal_request(message: bytes) -> dict | None:
+    """Decode an instruction message into a proposal request, or None."""
+    from eth_abi.abi import decode as abi_decode
+
+    from dal.chain.abi import (
+        FDC2_ATTESTATION_REQUEST,
+        PMW_UTXO_PROPOSAL_CHECK,
+        PROPOSAL_REQUEST_BODY,
+    )
+
+    try:
+        # ((attestationType, sourceId, thresholdBIPS, proofOwner), requestBody)
+        (request,) = abi_decode(["((bytes32,bytes32,uint16,address),bytes)"], message)
+        header, body = request
+        if header[0] != PMW_UTXO_PROPOSAL_CHECK:
+            return None
+        wallet_id, account_index, sequence, attempt, generation, package_hash = (
+            abi_decode(PROPOSAL_REQUEST_BODY, body)
+        )
+    except Exception:
+        return None
+
+    _ = FDC2_ATTESTATION_REQUEST  # documented shape; decoded positionally above
+    return {
+        "wallet_id": wallet_id,
+        "account_index": account_index,
+        "sequence_position": sequence,
+        "attempt": attempt,
+        "generation": generation,
+        "package_hash": package_hash,
+    }
+
+
+def _proposal_expectation(parsed, *, proposer, block, now, ttl) -> int:
+    """Write the expectation, keyed by the commitment itself.
+
+    ``get_or_create`` is what makes a reissue a RETRY rather than a rival: an
+    identical request submitted again finds the first expectation and leaves its
+    provenance alone. The first commitment keeps it, which is the rule.
+    """
+    key = parsed["package_hash"].hex()
+    _, created = Expectation.objects.get_or_create(
+        key=key,
+        defaults={
+            "message_class": MessageClass.PROPOSAL,
+            "trigger_ref": f"0x{parsed['wallet_id'].hex()}/{parsed['account_index']}"
+            f"#{parsed['sequence_position']}.{parsed['attempt']}",
+            "origin": "",  # resolved from the registry when it is fetched
+            "params": {
+                "proposer": proposer,
+                "packageHash": f"0x{key}",
+                "walletId": f"0x{parsed['wallet_id'].hex()}",
+                "accountIndex": parsed["account_index"],
+                "generation": parsed["generation"],
+                "blockNumber": block,
+            },
+            "first_seen_at": now,
+            "expires_at": now + ttl,
+        },
+    )
+    return int(created)

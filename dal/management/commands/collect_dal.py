@@ -15,11 +15,13 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from dal.chain import indexer as indexer_module
+from dal.chain import registry as registry_module
 from dal.chain.indexer import HistoryGap
-from dal.chain.triggers import discover_tee_instructions
+from dal.chain.triggers import discover_proposal_requests, discover_tee_instructions
 from dal.collector import collect_once
 from dal.gate.g2 import gate_action_result
 from dal.keys import instruction_index_key
+from dal.proposals import collect_open_proposals
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +51,21 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         reader = indexer_module.from_settings()
         chain_id = _chain_id()
+
+        # Optional: without a channel address the node still collects machine
+        # results, it simply cannot resolve a proposer's endpoint. Reported
+        # rather than fatal, so a deployment that only wants the archival
+        # classes is a configuration and not a broken install.
+        registry = submitters = None
+        try:
+            registry = registry_module.from_settings()
+            submitters = registry_module.Submitters(settings.DAL_RPC_URL)
+        except Exception as exc:
+            logger.warning("DAL: proposals disabled (%s)", exc)
         cursor = options["from_block"]
 
         while True:
+            cursor_was = cursor
             try:
                 report = discover_tee_instructions(
                     reader,
@@ -62,6 +76,16 @@ class Command(BaseCommand):
                 # cursor to the chain tip would skip every block it had not
                 # reached, and nothing revisits a skipped range.
                 cursor = max(cursor, report.through_block + 1)
+                # The SAME event stream carries proposal commitments: the hub
+                # turns a proposer's attestation request into an instruction, so
+                # recognising one is decoding a message already being read.
+                if registry is not None:
+                    discover_proposal_requests(
+                        reader,
+                        contract_address=options["contract"],
+                        from_block=cursor_was,
+                        submitter_of=submitters,
+                    )
             except HistoryGap as exc:
                 # The range asked for has been dropped, or the indexer has not
                 # published its state yet. Never treated as "nothing happened":
@@ -75,6 +99,17 @@ class Command(BaseCommand):
                 allow_private=settings.DAL_ALLOW_PRIVATE_ORIGINS,
                 give_up_after=timedelta(minutes=settings.DAL_GIVE_UP_MINUTES),
             )
+
+            # Proposals are fetched from their own expectations, which the
+            # commitments above created. A package that is not published yet
+            # stays open and is retried — the ordinary case, since a commitment
+            # is mined before anything is disclosed.
+            if registry is not None:
+                collect_open_proposals(
+                    registry=registry,
+                    chain_id=chain_id,
+                    allow_private=settings.DAL_ALLOW_PRIVATE_ORIGINS,
+                )
 
             if options["once"]:
                 return

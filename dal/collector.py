@@ -29,6 +29,7 @@ from django.utils import timezone
 
 from dal.fetch import FetchError, Resolved, UnsafeURL, fetch, resolve
 from dal.gate.result import Admitted, Refused, Verdict
+from dal.keys import MessageClass
 from dal.models import Artifact, ArtifactIndex, Expectation, ExpectationState
 
 logger = logging.getLogger(__name__)
@@ -115,9 +116,15 @@ def collect_once(
     resolved_cache: dict[str, Resolved | None] = {}
     throttled: set[str] = set()
 
-    due = Expectation.objects.filter(state=ExpectationState.OPEN).order_by(
-        "last_attempt_at"
-    )[:limit]
+    # Scoped to the class this tick knows how to fetch. Every other class has
+    # its own collector with its own trigger and its own way of resolving an
+    # origin — a proposal's endpoint, for instance, is read from the registry at
+    # fetch time and is deliberately blank when its expectation is written. A
+    # collector that took every open expectation would refuse those for having
+    # no origin, before the collector that owns them ever looked.
+    due = Expectation.objects.filter(
+        state=ExpectationState.OPEN, message_class=MessageClass.TEE_ACTION_RESULT
+    ).order_by("last_attempt_at")[:limit]
 
     for expectation in due:
         outcome = _collect_one(

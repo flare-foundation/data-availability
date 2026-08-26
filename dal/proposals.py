@@ -27,7 +27,7 @@ from dal.models import Artifact, ArtifactIndex, Expectation, ExpectationState
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["ProposalOutcome", "collect_proposal"]
+__all__ = ["ProposalOutcome", "collect_open_proposals", "collect_proposal"]
 
 # Short by default. A losing proposal becomes unfinalizable the moment the
 # eligibility generation bumps, and most proposals in a contest lose.
@@ -195,3 +195,43 @@ def _close(expectation, state, reason) -> ProposalOutcome:
     expectation.save(update_fields=["state", "reason", "last_attempt_at"])
     logger.warning("DAL: proposal %s refused: %s", expectation.key, reason)
     return ProposalOutcome(False, reason, expectation.key)
+
+
+def collect_open_proposals(
+    *, registry, chain_id: int, allow_private: bool = False, limit: int = 100
+) -> list[ProposalOutcome]:
+    """Fetch every proposal that has been committed to and not yet collected.
+
+    Driven by expectations rather than by a caller naming a hash: the requests
+    are on chain, so the node already knows what it is owed and by whom. A
+    proposal that is not published yet stays open and is retried next tick —
+    which is the ordinary case, since a commitment is mined before the package
+    is disclosed.
+    """
+    out = []
+    open_proposals = Expectation.objects.filter(
+        message_class=MessageClass.PROPOSAL, state=ExpectationState.OPEN
+    ).order_by("last_attempt_at")[:limit]
+
+    for expectation in open_proposals:
+        params = expectation.params
+        try:
+            wallet_id = bytes.fromhex(params["walletId"].removeprefix("0x"))
+            package_hash = bytes.fromhex(params["packageHash"].removeprefix("0x"))
+        except KeyError, ValueError:
+            logger.warning("DAL: proposal %s has unusable params", expectation.key)
+            continue
+
+        out.append(
+            collect_proposal(
+                registry=registry,
+                chain_id=chain_id,
+                wallet_id=wallet_id,
+                account_index=int(params.get("accountIndex", 0)),
+                proposer=params["proposer"],
+                package_hash=package_hash,
+                generation=params.get("generation"),
+                allow_private=allow_private,
+            )
+        )
+    return out

@@ -17,7 +17,10 @@ from typing import Any, Final
 from eth_utils.abi import event_abi_to_log_topic
 
 __all__ = [
+    "FDC2_ATTESTATION_REQUEST",
     "IS_ALLOWED_PROPOSER_AT",
+    "PMW_UTXO_PROPOSAL_CHECK",
+    "PROPOSAL_REQUEST_BODY",
     "PROPOSER_URL",
     "TEE_INSTRUCTIONS_SENT",
     "topic0",
@@ -108,3 +111,51 @@ IS_ALLOWED_PROPOSER_AT: Final[dict[str, Any]] = {
     ],
     "outputs": [{"name": "", "type": "bool"}],
 }
+
+
+# The FDC2 attestation request, as the hub encodes it into the instruction's
+# `message`: abi.encode(Fdc2AttestationRequest).
+#
+# This is what makes a proposal's trigger free. The hub turns a request into a
+# TeeInstructionsSent instruction — the very event already indexed for machine
+# results — so recognising a proposal expectation is decoding a message the node
+# is reading anyway, not watching a second source.
+FDC2_ATTESTATION_REQUEST: Final[dict[str, Any]] = {
+    "name": "request",
+    "type": "tuple",
+    "components": [
+        {
+            "name": "header",
+            "type": "tuple",
+            "components": [
+                {"name": "attestationType", "type": "bytes32"},
+                {"name": "sourceId", "type": "bytes32"},
+                {"name": "thresholdBIPS", "type": "uint16"},
+                {"name": "proofOwner", "type": "address"},
+            ],
+        },
+        {"name": "requestBody", "type": "bytes"},
+    ],
+}
+
+# The request body of PMWUtxoProposalCheck. `packageHash` is the commitment the
+# proposer made before publishing anything.
+PROPOSAL_REQUEST_BODY: Final[list[str]] = [
+    "bytes32",  # walletId
+    "uint32",  # accountIndex
+    "uint64",  # sequencePosition
+    "uint32",  # attempt
+    "uint64",  # eligibleGeneration
+    "bytes32",  # packageHash
+]
+
+
+def attestation_type(name: str) -> bytes:
+    """An attestation type is its name, right-padded to 32 bytes."""
+    raw = name.encode("ascii")
+    if len(raw) > 32:
+        raise ValueError(f"attestation type {name!r} is longer than 32 bytes")
+    return raw.ljust(32, b"\x00")
+
+
+PMW_UTXO_PROPOSAL_CHECK: Final = attestation_type("PMWUtxoProposalCheck")

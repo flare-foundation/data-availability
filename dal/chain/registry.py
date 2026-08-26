@@ -21,7 +21,7 @@ from dal.chain.abi import IS_ALLOWED_PROPOSER_AT, PROPOSER_URL
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["ProposerEntry", "Registry"]
+__all__ = ["ProposerEntry", "Registry", "Submitters"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,3 +79,31 @@ def from_settings() -> Registry:
             "DAL_RPC_URL and DAL_CHANNEL_ADDRESS must be set to resolve proposers"
         )
     return Registry(settings.DAL_RPC_URL, settings.DAL_CHANNEL_ADDRESS)
+
+
+class Submitters:
+    """Who actually sent a transaction.
+
+    Provenance under commit-then-publish rests on this and on nothing else. The
+    instruction carries a ``claimBackAddress``, but that is chosen by whoever
+    called the hub and can name anybody — so it is a hint about where a refund
+    goes, never evidence of authorship. The transaction's sender is the one
+    value the caller cannot lie about.
+    """
+
+    def __init__(self, rpc_url: str):
+        self._w3 = Web3(Web3.HTTPProvider(rpc_url))
+        self._cache: dict[str, str] = {}
+
+    def __call__(self, transaction_hash: str) -> str | None:
+        key = transaction_hash.removeprefix("0x").lower()
+        if key in self._cache:
+            return self._cache[key]
+        try:
+            tx = self._w3.eth.get_transaction("0x" + key)
+        except Exception as exc:
+            logger.warning("DAL: could not read transaction %s: %s", key, exc)
+            return None
+        sender = tx["from"]
+        self._cache[key] = sender
+        return sender
