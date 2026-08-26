@@ -190,7 +190,7 @@ MIDDLEWARE = [
     "project.debug.debug_error_middleware",
 ]
 
-ROOT_URLCONF = "project.urls"
+ROOT_URLCONF = os.environ.get("ROOT_URLCONF", "project.urls")
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "RUNNING_IN_LOCAL_MODE")
 
