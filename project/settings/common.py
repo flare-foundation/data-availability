@@ -153,6 +153,10 @@ CCHAIN_INDEXER = {
 # lists -- and refuses any chain outside the four public ones, none of which the
 # DAL needs or should be constrained by.
 DAL_RPC_URL = os.environ.get("DAL_RPC_URL", os.environ.get("RPC_URL", ""))
+
+# The UtxoInstructionChannel carrying the proposer registry. Read at latest for
+# endpoints, and AT A GENERATION for membership.
+DAL_CHANNEL_ADDRESS = os.environ.get("DAL_CHANNEL_ADDRESS", "")
 _DAL_CHAIN_ID = os.environ.get("DAL_CHAIN_ID", "")
 DAL_CHAIN_ID = int(_DAL_CHAIN_ID) if _DAL_CHAIN_ID else None
 
