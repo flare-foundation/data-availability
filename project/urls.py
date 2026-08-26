@@ -53,6 +53,10 @@ urlpatterns += [
     path("api/v0/", include("fsp.urls")),
     path("api/v0/", include("fdc.urls.v0")),
     path("api/v1/", include("fdc.urls.v1")),
+    # The DAL serves BYTES under a 32-byte key, so it is not versioned with the
+    # protocol-result APIs above: those return decoded records that may grow
+    # fields, this returns exactly what an origin served and can never grow one.
+    path("api/dal/", include("dal.urls")),
 ]
 
 if "django_prometheus" in settings.INSTALLED_APPS:
