@@ -12,8 +12,11 @@ answer.
 import json
 from typing import Any
 
+from eth_utils.crypto import keccak
+
 from dal.gate.result import Admitted, Refused, Verdict
 from dal.gate.signing import (
+    CSP_PROPOSAL,
     PROXY_ACTION_RESULT,
     TEE_ACTION_RESULT,
     TEE_VOTE_HASH,
@@ -24,7 +27,7 @@ from dal.gate.signing import (
 )
 from dal.keys import action_result_key
 
-__all__ = ["gate_action_result", "gate_vote"]
+__all__ = ["gate_action_result", "gate_proposal_package", "gate_vote"]
 
 
 def _unhex(value: Any, field: str) -> bytes:
@@ -153,3 +156,58 @@ def gate_vote(data: bytes, *, chain_id: int, tee_id: str) -> Refused | None:
     except SignatureError as exc:
         return Refused(f"vote signature: {exc}")
     return None
+
+
+# A proposer signature is [R || S || V], fixed width, so a package needs no
+# length prefix and no encoding decision: the last 65 bytes are the signature
+# and everything before them is the envelope.
+PROPOSER_SIG_BYTES = 65
+
+
+def gate_proposal_package(
+    raw: bytes, *, chain_id: int, package_hash: bytes, proposer: str
+) -> Verdict:
+    """Gate a proposal package: ``envelope ‖ proposerSig``.
+
+    Two checks over one artifact, and they establish different things.
+
+    **G1** — ``keccak(raw) == packageHash``. The FDC2 request committed to this
+    hash before the package existed publicly (§5.7), so a match says these are
+    the bytes that were committed to, and nothing else can be served under this
+    key.
+
+    **G2** — the signature recovers, under ``CSP_PROPOSAL`` over the envelope's
+    own hash, to the proposer that submitted the committing request. The
+    submitter is an on-chain fact, so ``proposer`` is derived rather than
+    asserted and a wrong attribution is not expressible.
+
+    The envelope is deliberately NOT decoded here. Its `proposerAddress` field
+    is checked by the verifier against the account's registry; this gate checks
+    possession of the key that committed. Two independent checks over one
+    artifact are worth more than one check performed twice, and keeping the DAL
+    free of the envelope's ABI means a change to that layout does not stop
+    artifacts being stored.
+    """
+    if len(package_hash) != 32:
+        return Refused(f"package hash is {len(package_hash)} bytes, not 32")
+    if len(raw) <= PROPOSER_SIG_BYTES:
+        return Refused(
+            f"package is {len(raw)} bytes, too short to hold an envelope and a signature"
+        )
+
+    # G1 first: it is a hash comparison against a value the chain already
+    # committed to, so it is both cheaper than recovery and stronger.
+    if keccak(raw) != package_hash:
+        return Refused("package does not hash to the committed packageHash")
+
+    envelope = raw[:-PROPOSER_SIG_BYTES]
+    signature = raw[-PROPOSER_SIG_BYTES:]
+
+    try:
+        verify(
+            payload_hash(CSP_PROPOSAL, chain_id, keccak(envelope)), signature, proposer
+        )
+    except SignatureError as exc:
+        return Refused(f"proposer signature: {exc}")
+
+    return Admitted(key=package_hash, raw=raw)
