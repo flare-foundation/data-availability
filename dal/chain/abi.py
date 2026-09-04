@@ -20,6 +20,7 @@ __all__ = [
     "FDC2_ATTESTATION_REQUEST",
     "IS_ALLOWED_PROPOSER_AT",
     "PMW_UTXO_PROPOSAL_CHECK",
+    "GET_UTXO_ACCOUNT",
     "PROPOSAL_REQUEST_BODY",
     "PROPOSER_URL",
     "TEE_INSTRUCTIONS_SENT",
@@ -78,34 +79,53 @@ def topic0(event_abi: dict[str, Any]) -> str:
 # proposer named in an older attestation request needs the endpoint it served
 # from, and whether it is still admitted is a separate question.
 PROPOSER_URL: Final[dict[str, Any]] = {
-    "name": "proposerUrl",
+    "name": "getProposerUrl",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [{"name": "proposer", "type": "address"}],
+    "outputs": [{"name": "url", "type": "string"}],
+}
+
+# PaymentAccountsFacet.getUtxoAccount(bytes32,uint32) -> PMWMultisigAccount
+#
+# The diamond addresses an account by (sourceId, accountAddress); an FDC2
+# PMWUtxoProposalCheck request still names it as (walletId, accountIndex). This
+# is the join, and reading it from the chain is what keeps the DAL free of
+# per-deployment account configuration: the pair is already in the request, and
+# the contract turns it into the struct its own reads expect.
+GET_UTXO_ACCOUNT: Final[dict[str, Any]] = {
+    "name": "getUtxoAccount",
     "type": "function",
     "stateMutability": "view",
     "inputs": [
         {"name": "walletId", "type": "bytes32"},
         {"name": "accountIndex", "type": "uint32"},
-        {"name": "proposer", "type": "address"},
     ],
     "outputs": [
-        {"name": "url", "type": "string"},
-        {"name": "exists", "type": "bool"},
-        {"name": "activeFrom", "type": "uint64"},
-        {"name": "activeUntil", "type": "uint64"},
+        {
+            "name": "",
+            "type": "tuple",
+            "components": [
+                {"name": "sourceId", "type": "bytes32"},
+                {"name": "accountAddress", "type": "string"},
+            ],
+        }
     ],
 }
 
-# UtxoInstructionChannel.isAllowedProposerAt(bytes32,uint32,address,uint64)
-#
-# Membership is asked AT A GENERATION, never at latest: a proposal names the
-# generation it binds to, and judging it against state at some later moment
-# would let a registry edit invalidate a proposal already voted on.
 IS_ALLOWED_PROPOSER_AT: Final[dict[str, Any]] = {
     "name": "isAllowedProposerAt",
     "type": "function",
     "stateMutability": "view",
     "inputs": [
-        {"name": "walletId", "type": "bytes32"},
-        {"name": "accountIndex", "type": "uint32"},
+        {
+            "name": "account",
+            "type": "tuple",
+            "components": [
+                {"name": "sourceId", "type": "bytes32"},
+                {"name": "accountAddress", "type": "string"},
+            ],
+        },
         {"name": "proposer", "type": "address"},
         {"name": "generation", "type": "uint64"},
     ],

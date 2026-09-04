@@ -47,7 +47,7 @@ class FakeRegistry:
     def proposer(self, wallet_id, account_index, proposer):
         from dal.chain.registry import ProposerEntry
 
-        return ProposerEntry(self.url, self.exists, 0, 0)
+        return ProposerEntry(url=self.url, exists=self.exists)
 
     def is_allowed_at(self, wallet_id, account_index, proposer, generation):
         return self.allowed
