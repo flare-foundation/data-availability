@@ -90,6 +90,22 @@ class Window:
     def covers(self, from_block: int) -> bool:
         return from_block >= self.log_floor
 
+    def regressed_from(self, previous: "Window | None") -> bool:
+        """Has the indexer gone BACKWARDS since it was last asked?
+
+        Only one thing makes that happen: the store was reprovisioned. An
+        indexer restarted with ``drop_table_at_start`` drops its tables and
+        re-indexes from block zero, so ``last_indexed`` falls from wherever it
+        was to nearly nothing and climbs again.
+
+        This matters to a caller holding a cursor. Surviving the drop is not
+        enough on its own -- a reader that kept its cursor would sit above the
+        blocks being rewritten, find nothing there, and report an empty chain
+        for a range full of events. Nothing revisits a range once passed, so
+        the miss is permanent and silent.
+        """
+        return previous is not None and self.last_indexed < previous.last_indexed
+
 
 @dataclass(frozen=True, slots=True)
 class LogRow:

@@ -25,6 +25,7 @@ from dal.chain.indexer import (  # noqa: E402
     LAST_INDEXED,
     LOG_FLOOR,
     HistoryGap,
+    Window,
     IndexerReader,
 )
 
@@ -116,6 +117,37 @@ def add_log(raw, *, block, log_index=0, address=ADDRESS, topic0=TOPIC, data="00"
             " VALUES (%s, %s, %s, '', '', '', %s, %s, %s, %s)",
             (address, data, topic0, f"{block:064x}", log_index, block * 10, block),
         )
+
+
+class TestRegressionDetection:
+    """Surviving the drop is not enough; the cursor has to come back with it.
+
+    A reader that kept its cursor above the rewritten range would find nothing
+    there and report an empty chain for blocks full of events — and since
+    nothing revisits a passed range, the miss is permanent and silent. That is
+    exactly how a run failed after the crash itself was fixed: discovery said
+    `logs=0 through=474` while the indexer held 75 logs at blocks 65..383.
+    """
+
+    def _window(self, last_indexed, *, tip=None, floor=0):
+        return Window(
+            chain_tip=tip if tip is not None else last_indexed,
+            last_indexed=last_indexed,
+            log_floor=floor,
+        )
+
+    def test_going_backwards_is_a_reprovisioning(self):
+        assert self._window(12).regressed_from(self._window(400))
+
+    def test_ordinary_progress_is_not(self):
+        assert not self._window(401).regressed_from(self._window(400))
+
+    def test_standing_still_is_not(self):
+        # An indexer that has caught up reports the same block for many ticks.
+        assert not self._window(400).regressed_from(self._window(400))
+
+    def test_the_first_tick_has_nothing_to_compare_against(self):
+        assert not self._window(400).regressed_from(None)
 
 
 class TestReprovisioning:

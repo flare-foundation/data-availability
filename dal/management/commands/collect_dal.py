@@ -63,10 +63,31 @@ class Command(BaseCommand):
         except Exception as exc:
             logger.warning("DAL: proposals disabled (%s)", exc)
         cursor = options["from_block"]
+        # What the indexer last told us it held. Kept so a reprovisioning can
+        # be recognised: see Window.regressed_from.
+        seen = None
 
         while True:
             cursor_was = cursor
             try:
+                # BEFORE discovery, because the answer decides where to look.
+                # An indexer that has gone backwards has dropped and is
+                # rewriting its tables, and a cursor left above the rewrite
+                # would scan an empty range for ever -- reporting "nothing
+                # happened" about blocks full of events, which is the one
+                # reading that stops collection silently.
+                window = reader.window()
+                if window.regressed_from(seen):
+                    logger.warning(
+                        "DAL: the indexer went backwards (%s -> %s): its store was "
+                        "reprovisioned, so discovery restarts at block %s",
+                        seen.last_indexed,
+                        window.last_indexed,
+                        window.log_floor,
+                    )
+                    cursor = cursor_was = window.log_floor
+                seen = window
+
                 report = discover_tee_instructions(
                     reader,
                     contract_address=options["contract"],
