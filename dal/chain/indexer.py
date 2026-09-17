@@ -53,12 +53,25 @@ class ImproperlyConfiguredIndexer(Exception):
 
 
 class HistoryGap(Exception):
-    """The range asked about is older than the indexer still holds.
+    """The indexer cannot answer about the range asked for, yet or any more.
 
     Never an empty result: an empty result means "nothing happened", and these
     two must not be confused by anything that decides whether an expectation
     exists.
+
+    Three causes, one handling. The range is older than the indexer still
+    holds; the indexer has not published its state rows yet; or its tables are
+    MISSING because it is being reprovisioned. The last is not hypothetical --
+    an indexer restarted with ``drop_table_at_start`` drops and recreates its
+    tables and re-indexes from block zero, and a collector that happened to be
+    mid-poll would otherwise die of a bare ProgrammingError and never
+    reconnect. All three mean the same thing to a caller: ask again later.
     """
+
+
+# MySQL's ER_NO_SUCH_TABLE. Matched on the code rather than the message,
+# which is localised and quoted differently across server versions.
+ER_NO_SUCH_TABLE: Final = 1146
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,10 +139,25 @@ class IndexerReader:
 
     @contextmanager
     def _cursor(self):
+        """A short-lived connection, with a reprovisioned store reported as a gap.
+
+        The translation is here rather than at each call site because this is
+        the one place every query passes through, and because the alternative
+        -- letting pymysql's ProgrammingError escape -- reads as a bug in the
+        SQL rather than as a source that went away. Only the missing-table code
+        is translated: a genuinely wrong column must still fail loudly.
+        """
         connection = pymysql.connect(**self._connect_args)
         try:
             with connection.cursor() as cursor:
                 yield cursor
+        except pymysql.err.ProgrammingError as exc:
+            if exc.args and exc.args[0] == ER_NO_SUCH_TABLE:
+                raise HistoryGap(
+                    f"the indexer's tables are missing, so it is being "
+                    f"reprovisioned: {exc.args[-1]}"
+                ) from exc
+            raise
         finally:
             connection.close()
 

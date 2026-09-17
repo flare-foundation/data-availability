@@ -13,6 +13,8 @@ one wire answer, and only the first is safe to act on.
 
 import os
 
+from contextlib import contextmanager
+
 import pytest
 
 pymysql = pytest.importorskip("pymysql")
@@ -114,6 +116,69 @@ def add_log(raw, *, block, log_index=0, address=ADDRESS, topic0=TOPIC, data="00"
             " VALUES (%s, %s, %s, '', '', '', %s, %s, %s, %s)",
             (address, data, topic0, f"{block:064x}", log_index, block * 10, block),
         )
+
+
+class TestReprovisioning:
+    """An indexer restarted with ``drop_table_at_start`` takes its tables away.
+
+    It is a real sequence, not a hypothetical: the end-to-end harness restarts
+    the chain indexer part-way through a run to widen the contract set, and the
+    collector is already polling by then. Before this was handled, the missing
+    table surfaced as a bare pymysql ProgrammingError, killed the collector
+    outright, and every later artifact fetch answered 404 -- which reads as a
+    proposer that published nothing.
+    """
+
+    @contextmanager
+    def _table_missing(self, raw, table):
+        # Renamed rather than dropped: the schema is not transcribed in these
+        # fixtures, so dropping it would leave nothing to restore for the tests
+        # that follow.
+        with raw.cursor() as cursor:
+            cursor.execute(f"RENAME TABLE `{table}` TO `{table}__hidden`")
+        try:
+            yield
+        finally:
+            with raw.cursor() as cursor:
+                cursor.execute(f"RENAME TABLE `{table}__hidden` TO `{table}`")
+
+    def test_a_missing_states_table_is_a_gap_not_a_crash(self, raw, indexer):
+        with self._table_missing(raw, "states"):
+            with pytest.raises(HistoryGap, match="reprovisioned"):
+                indexer.window()
+
+    def test_a_missing_logs_table_is_a_gap_not_a_crash(self, raw, indexer):
+        set_state(raw, CHAIN_TIP, 1000)
+        set_state(raw, LAST_INDEXED, 1000)
+        with self._table_missing(raw, "logs"):
+            with pytest.raises(HistoryGap, match="reprovisioned"):
+                indexer.logs(address=ADDRESS, topic0=TOPIC, from_block=0)
+
+    def test_the_reader_works_again_once_the_table_is_back(self, raw, indexer):
+        # The point of the translation: the collector retries on the next tick
+        # rather than staying dead, so the store coming back must be enough.
+        set_state(raw, CHAIN_TIP, 1000)
+        set_state(raw, LAST_INDEXED, 1000)
+        with self._table_missing(raw, "logs"):
+            with pytest.raises(HistoryGap):
+                indexer.logs(address=ADDRESS, topic0=TOPIC, from_block=0)
+        add_log(raw, block=10)
+        rows, _ = indexer.logs(address=ADDRESS, topic0=TOPIC, from_block=0)
+        assert [r.block_number for r in rows] == [10]
+
+    def test_a_real_sql_mistake_still_fails_loudly(self, raw, indexer):
+        # Only the missing-table code is translated. A wrong column is a bug in
+        # the query and must not be reported as "ask again later", which would
+        # retry it forever in silence.
+        #
+        # Asserted as "not a HistoryGap" rather than as a named pymysql class,
+        # because the classes are not where you would guess: a missing TABLE is
+        # ProgrammingError while a missing COLUMN is OperationalError. Pinning
+        # the wrong one here would pass for the wrong reason.
+        with pytest.raises(pymysql.err.Error) as caught:
+            with indexer._cursor() as cursor:
+                cursor.execute("SELECT no_such_column FROM states")
+        assert not isinstance(caught.value, HistoryGap)
 
 
 class TestWindow:
