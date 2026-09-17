@@ -28,6 +28,7 @@ CHAIN_ID = json.loads((Path(__file__).parent / "vectors.json").read_text())[0][
 PROPOSER_KEY = "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318"
 PROPOSER = Account.from_key(PROPOSER_KEY).address
 WALLET = b"\x11" * 32
+REGISTRY = "0x" + "0" * 36 + "7e61"
 TXID = b"\x22" * 32
 ENVELOPE = b"an abi-encoded ProposalEnvelope"
 
@@ -49,7 +50,13 @@ class FakeRegistry:
 
         return ProposerEntry(url=self.url, exists=self.exists)
 
-    def is_allowed_at(self, wallet_id, account_index, proposer, generation):
+    def is_allowed_at(
+        self, wallet_registry, wallet_id, account_index, proposer, generation
+    ):
+        # Asserted rather than ignored: the registry is half of what identifies
+        # the account, and a caller that dropped it would otherwise pass here
+        # and resolve to the wrong account on a real chain.
+        assert wallet_registry == REGISTRY
         return self.allowed
 
 
@@ -85,6 +92,7 @@ def collect(url, package_hash, **kwargs):
     return collect_proposal(
         registry=kwargs.pop("registry", FakeRegistry(url)),
         chain_id=kwargs.pop("chain_id", CHAIN_ID),
+        wallet_registry=kwargs.pop("wallet_registry", REGISTRY),
         wallet_id=WALLET,
         account_index=0,
         proposer=kwargs.pop("proposer", PROPOSER),

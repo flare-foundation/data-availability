@@ -16,6 +16,13 @@ class Command(BaseCommand):
     help = "Fetch, gate and store one proposal package."
 
     def add_arguments(self, parser):
+        parser.add_argument(
+            "--wallet-registry",
+            required=True,
+            help="the registry the wallet is on — an account is "
+            "(walletRegistry, walletId, accountIndex), because wallet ids of "
+            "different registries may collide",
+        )
         parser.add_argument("--wallet-id", required=True)
         parser.add_argument("--account-index", type=int, default=0)
         parser.add_argument(
@@ -47,6 +54,7 @@ class Command(BaseCommand):
         outcome = collect_proposal(
             registry=registry_module.from_settings(),
             chain_id=settings.DAL_CHAIN_ID,
+            wallet_registry=options["wallet_registry"],
             wallet_id=unhex(options["wallet_id"], "wallet id"),
             account_index=options["account_index"],
             proposer=options["proposer"],

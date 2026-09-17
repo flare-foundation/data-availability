@@ -257,8 +257,8 @@ def _proposal_request(message: bytes) -> dict | None:
     from eth_abi.abi import decode as abi_decode
 
     from dal.chain.abi import (
+        CSP_PROPOSAL_CHECK,
         FDC2_ATTESTATION_REQUEST,
-        PMW_UTXO_PROPOSAL_CHECK,
         PROPOSAL_REQUEST_BODY,
     )
 
@@ -266,16 +266,23 @@ def _proposal_request(message: bytes) -> dict | None:
         # ((attestationType, sourceId, thresholdBIPS, proofOwner), requestBody)
         (request,) = abi_decode(["((bytes32,bytes32,uint16,address),bytes)"], message)
         header, body = request
-        if header[0] != PMW_UTXO_PROPOSAL_CHECK:
+        if header[0] != CSP_PROPOSAL_CHECK:
             return None
-        wallet_id, account_index, sequence, attempt, generation, package_hash = (
-            abi_decode(PROPOSAL_REQUEST_BODY, body)
-        )
+        (
+            wallet_registry,
+            wallet_id,
+            account_index,
+            sequence,
+            attempt,
+            generation,
+            package_hash,
+        ) = abi_decode(PROPOSAL_REQUEST_BODY, body)
     except Exception:
         return None
 
     _ = FDC2_ATTESTATION_REQUEST  # documented shape; decoded positionally above
     return {
+        "wallet_registry": wallet_registry,
         "wallet_id": wallet_id,
         "account_index": account_index,
         "sequence_position": sequence,
@@ -297,12 +304,17 @@ def _proposal_expectation(parsed, *, proposer, block, now, ttl) -> int:
         key=key,
         defaults={
             "message_class": MessageClass.PROPOSAL,
-            "trigger_ref": f"0x{parsed['wallet_id'].hex()}/{parsed['account_index']}"
+            # The registry is part of the reference because it is part of the
+            # identity: two registries may issue the same wallet id, so a
+            # trigger naming only the wallet reads as one account across both.
+            "trigger_ref": f"{parsed['wallet_registry']}"
+            f"/0x{parsed['wallet_id'].hex()}/{parsed['account_index']}"
             f"#{parsed['sequence_position']}.{parsed['attempt']}",
             "origin": "",  # resolved from the registry when it is fetched
             "params": {
                 "proposer": proposer,
                 "packageHash": f"0x{key}",
+                "walletRegistry": parsed["wallet_registry"],
                 "walletId": f"0x{parsed['wallet_id'].hex()}",
                 "accountIndex": parsed["account_index"],
                 "generation": parsed["generation"],

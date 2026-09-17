@@ -19,8 +19,8 @@ from eth_utils.abi import event_abi_to_log_topic
 __all__ = [
     "FDC2_ATTESTATION_REQUEST",
     "IS_ALLOWED_PROPOSER_AT",
-    "PMW_UTXO_PROPOSAL_CHECK",
-    "GET_UTXO_ACCOUNT",
+    "CSP_PROPOSAL_CHECK",
+    "GET_CSP_ACCOUNT",
     "PROPOSAL_REQUEST_BODY",
     "PROPOSER_URL",
     "TEE_INSTRUCTIONS_SENT",
@@ -86,18 +86,26 @@ PROPOSER_URL: Final[dict[str, Any]] = {
     "outputs": [{"name": "url", "type": "string"}],
 }
 
-# PaymentAccountsFacet.getUtxoAccount(bytes32,uint32) -> PMWMultisigAccount
+# CspInstructionsFacet.getCspAccount(address,bytes32,uint32) -> WalletAccount
 #
 # The diamond addresses an account by (sourceId, accountAddress); an FDC2
-# PMWUtxoProposalCheck request still names it as (walletId, accountIndex). This
-# is the join, and reading it from the chain is what keeps the DAL free of
-# per-deployment account configuration: the pair is already in the request, and
-# the contract turns it into the struct its own reads expect.
-GET_UTXO_ACCOUNT: Final[dict[str, Any]] = {
-    "name": "getUtxoAccount",
+# CspProposalCheck request names it as (walletRegistry, walletId, accountIndex).
+# This is the join, and reading it from the chain is what keeps the DAL free of
+# per-deployment account configuration: the triple is already in the request,
+# and the contract turns it into the struct its own reads expect.
+#
+# The REGISTRY is the third of those, and it is not decoration: wallet ids of
+# different registries may collide, so (walletId, accountIndex) alone no longer
+# names one account. It is also requester-supplied and therefore attacker-chosen
+# — naming a registry you control is how you would try to be resolved to an
+# account you own. Nothing here decides anything on it; the verifier answers
+# only about its configured registry and the contract checks again.
+GET_CSP_ACCOUNT: Final[dict[str, Any]] = {
+    "name": "getCspAccount",
     "type": "function",
     "stateMutability": "view",
     "inputs": [
+        {"name": "walletRegistry", "type": "address"},
         {"name": "walletId", "type": "bytes32"},
         {"name": "accountIndex", "type": "uint32"},
     ],
@@ -158,9 +166,17 @@ FDC2_ATTESTATION_REQUEST: Final[dict[str, Any]] = {
     ],
 }
 
-# The request body of PMWUtxoProposalCheck. `packageHash` is the commitment the
+# The request body of CspProposalCheck. `packageHash` is the commitment the
 # proposer made before publishing anything.
+#
+# `walletRegistry` LEADS, and it was not there before the control plane was
+# split from the execution plane: an account is identified by the triple
+# (walletRegistry, walletId, accountIndex), because wallet ids of different
+# registries may collide. Decoding without it silently shifts every later field
+# by one word, and the decode then fails rather than lying — which is the only
+# reason this was cheap to find.
 PROPOSAL_REQUEST_BODY: Final[list[str]] = [
+    "address",  # walletRegistry
     "bytes32",  # walletId
     "uint32",  # accountIndex
     "uint64",  # sequencePosition
@@ -178,4 +194,4 @@ def attestation_type(name: str) -> bytes:
     return raw.ljust(32, b"\x00")
 
 
-PMW_UTXO_PROPOSAL_CHECK: Final = attestation_type("PMWUtxoProposalCheck")
+CSP_PROPOSAL_CHECK: Final = attestation_type("CspProposalCheck")

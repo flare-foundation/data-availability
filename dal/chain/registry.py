@@ -11,12 +11,17 @@ The endpoint, by contrast, is read at latest and that is fine: a wrong or moved
 URL yields bytes that fail the hash and are refused, so it costs a fetch rather
 than correctness.
 
-**Two addressing schemes, both current.** An FDC2 `PMWUtxoProposalCheck` request
-names an account as `(walletId, accountIndex)`; the TeePayments diamond
-addresses it as `PMWMultisigAccount(sourceId, accountAddress)`. Neither is
+**Two addressing schemes, both current.** An FDC2 `CspProposalCheck` request
+names an account as `(walletRegistry, walletId, accountIndex)`; the TeePayments
+diamond addresses it as `WalletAccount(sourceId, accountAddress)`. Neither is
 wrong and neither is going away, so this module joins them with the diamond's
-own `getUtxoAccount(walletId, accountIndex)` rather than making the DAL carry
-account configuration it would then have to keep in step with a deployment.
+own `getCspAccount(walletRegistry, walletId, accountIndex)` rather than making
+the DAL carry account configuration it would then have to keep in step with a
+deployment.
+
+The registry leads that triple because wallet ids of different registries may
+collide: a wallet id alone stopped naming one account when custody moved onto
+its own registries, so it is part of the key here and part of the cache key.
 
 That join is also what this module got wrong until 2026-09-05: it called
 `proposerUrl(bytes32,uint32,address)`, a pre-diamond signature that no facet
@@ -32,7 +37,7 @@ from dataclasses import dataclass
 
 from web3 import Web3
 
-from dal.chain.abi import GET_UTXO_ACCOUNT, IS_ALLOWED_PROPOSER_AT, PROPOSER_URL
+from dal.chain.abi import GET_CSP_ACCOUNT, IS_ALLOWED_PROPOSER_AT, PROPOSER_URL
 
 logger = logging.getLogger(__name__)
 
@@ -67,34 +72,44 @@ class Registry:
     def __init__(self, rpc_url: str, channel_address: str):
         self._w3 = Web3(Web3.HTTPProvider(rpc_url))
         self._address = Web3.to_checksum_address(channel_address)
-        self._accounts: OrderedDict[tuple[bytes, int], tuple[bytes, str]] = (
+        self._accounts: OrderedDict[tuple[str, bytes, int], tuple[bytes, str]] = (
             OrderedDict()
         )
 
     def _contract(self, abi):
         return self._w3.eth.contract(address=self._address, abi=[abi])
 
-    def account(self, wallet_id: bytes, account_index: int) -> tuple[bytes, str]:
-        """Resolve (walletId, accountIndex) to the diamond's account struct.
+    def account(
+        self, wallet_registry: str, wallet_id: bytes, account_index: int
+    ) -> tuple[bytes, str]:
+        """Resolve (walletRegistry, walletId, accountIndex) to the account struct.
 
         The join between two addressing schemes that both remain correct: an
         FDC2 request names an account positionally, the contract addresses it as
         (sourceId, accountAddress). Reading it from the chain is what keeps this
         service free of per-deployment account configuration.
 
-        Cached because it cannot change for a given pair — a registration is
+        The registry is requester-supplied and so attacker-chosen. It is safe to
+        resolve on: the answer is only ever an account struct, and whether that
+        account may be spoken for is decided by the verifier against its own
+        configured registry and by the contract when it finalizes. What is NOT
+        safe is dropping it, which is what an older two-part key did.
+
+        Cached because it cannot change for a given triple — a registration is
         immutable once made — and because it would otherwise be an extra RPC on
         every membership check, on the one component that must stay up.
         """
-        key = (wallet_id, account_index)
+        key = (wallet_registry, wallet_id, account_index)
         hit = self._accounts.get(key)
         if hit is not None:
             self._accounts.move_to_end(key)
             return hit
 
         source_id, address = (
-            self._contract(GET_UTXO_ACCOUNT)
-            .functions.getUtxoAccount(wallet_id, account_index)
+            self._contract(GET_CSP_ACCOUNT)
+            .functions.getCspAccount(
+                Web3.to_checksum_address(wallet_registry), wallet_id, account_index
+            )
             .call()
         )
         self._accounts[key] = (source_id, address)
@@ -120,13 +135,18 @@ class Registry:
         return ProposerEntry(url=url, exists=bool(url))
 
     def is_allowed_at(
-        self, wallet_id: bytes, account_index: int, proposer: str, generation: int
+        self,
+        wallet_registry: str,
+        wallet_id: bytes,
+        account_index: int,
+        proposer: str,
+        generation: int,
     ) -> bool:
         """Was this proposer admitted for THAT generation? Never for 'now'."""
         return (
             self._contract(IS_ALLOWED_PROPOSER_AT)
             .functions.isAllowedProposerAt(
-                self.account(wallet_id, account_index),
+                self.account(wallet_registry, wallet_id, account_index),
                 Web3.to_checksum_address(proposer),
                 generation,
             )

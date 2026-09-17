@@ -18,7 +18,7 @@ from eth_abi.abi import encode as abi_encode
 from eth_utils.address import to_checksum_address
 
 from dal.chain.abi import (
-    PMW_UTXO_PROPOSAL_CHECK,
+    CSP_PROPOSAL_CHECK,
     TEE_INSTRUCTIONS_SENT,
     attestation_type,
     topic0,
@@ -32,15 +32,20 @@ WALLET = b"\x11" * 32
 PACKAGE = b"\xab" * 32
 SUBMITTER = to_checksum_address("0x" + "0" * 36 + "5e11")
 CLAIM_BACK = to_checksum_address("0x" + "0" * 36 + "c1a1")
+REGISTRY = to_checksum_address("0x" + "0" * 36 + "7e61")
 TX = "cd" * 32
 
 
 def request_message(
-    package=PACKAGE, wallet=WALLET, generation=3, a_type=PMW_UTXO_PROPOSAL_CHECK
+    package=PACKAGE,
+    wallet=WALLET,
+    generation=3,
+    a_type=CSP_PROPOSAL_CHECK,
+    registry=REGISTRY,
 ) -> bytes:
     body = abi_encode(
-        ["bytes32", "uint32", "uint64", "uint32", "uint64", "bytes32"],
-        [wallet, 0, 7, 0, generation, package],
+        ["address", "bytes32", "uint32", "uint64", "uint32", "uint64", "bytes32"],
+        [registry, wallet, 0, 7, 0, generation, package],
     )
     return abi_encode(
         ["((bytes32,bytes32,uint16,address),bytes)"],
@@ -179,4 +184,4 @@ def test_the_op_identifiers_are_pinned():
         == "465f4644433200000000000000000000000000000000000000000000000000"[:62] + "00"
     )
     assert OP_PROVE.hex() == "50524f5645" + "00" * 27
-    assert PMW_UTXO_PROPOSAL_CHECK.hex() == b"PMWUtxoProposalCheck".hex() + "00" * 12
+    assert CSP_PROPOSAL_CHECK.hex() == b"CspProposalCheck".hex() + "00" * 16

@@ -49,6 +49,7 @@ def collect_proposal(
     *,
     registry,
     chain_id: int,
+    wallet_registry: str,
     wallet_id: bytes,
     account_index: int,
     proposer: str,
@@ -74,19 +75,21 @@ def collect_proposal(
             now,
             f"proposer {proposer} has no registered endpoint",
             ttl,
+            wallet_registry,
             wallet_id,
             account_index,
             proposer,
         )
 
     if generation is not None and not registry.is_allowed_at(
-        wallet_id, account_index, proposer, generation
+        wallet_registry, wallet_id, account_index, proposer, generation
     ):
         return _refuse(
             key,
             now,
             f"proposer {proposer} was not admitted for generation {generation}",
             ttl,
+            wallet_registry,
             wallet_id,
             account_index,
             proposer,
@@ -96,7 +99,7 @@ def collect_proposal(
         key=key,
         defaults={
             "message_class": MessageClass.PROPOSAL,
-            "trigger_ref": f"0x{wallet_id.hex()}/{account_index}",
+            "trigger_ref": f"{wallet_registry}/0x{wallet_id.hex()}/{account_index}",
             "origin": entry.url,
             "params": {
                 "proposer": proposer,
@@ -173,12 +176,12 @@ def collect_proposal(
     return ProposalOutcome(True, "", key)
 
 
-def _refuse(key, now, reason, ttl, wallet_id, account_index, proposer):
+def _refuse(key, now, reason, ttl, wallet_registry, wallet_id, account_index, proposer):
     expectation, _ = Expectation.objects.get_or_create(
         key=key,
         defaults={
             "message_class": MessageClass.PROPOSAL,
-            "trigger_ref": f"0x{wallet_id.hex()}/{account_index}",
+            "trigger_ref": f"{wallet_registry}/0x{wallet_id.hex()}/{account_index}",
             "origin": "",
             "params": {"proposer": proposer},
             "first_seen_at": now,
@@ -218,6 +221,11 @@ def collect_open_proposals(
         try:
             wallet_id = bytes.fromhex(params["walletId"].removeprefix("0x"))
             package_hash = bytes.fromhex(params["packageHash"].removeprefix("0x"))
+            # No default. An expectation without a registry predates the
+            # control-plane split and cannot be resolved to an account; falling
+            # back to a zero address would ask the chain a question with a
+            # confident wrong answer instead of leaving the proposal open.
+            wallet_registry = params["walletRegistry"]
         except KeyError, ValueError:
             logger.warning("DAL: proposal %s has unusable params", expectation.key)
             continue
@@ -226,6 +234,7 @@ def collect_open_proposals(
             collect_proposal(
                 registry=registry,
                 chain_id=chain_id,
+                wallet_registry=wallet_registry,
                 wallet_id=wallet_id,
                 account_index=int(params.get("accountIndex", 0)),
                 proposer=params["proposer"],
