@@ -72,14 +72,14 @@ def topic0(event_abi: dict[str, Any]) -> str:
     return event_abi_to_log_topic(event_abi).hex()
 
 
-# UtxoInstructionChannel.proposerUrl(bytes32,uint32,address)
-#   -> (string url, bool exists, uint64 activeFrom, uint64 activeUntil)
+# CspProposalsFacet.getProposerUrl(address) -> string url
 #
 # The registry is what makes the pull model possible: without an endpoint on
 # chain, proposal packages would be the one artifact that had to be pushed.
-# Answers for DEACTIVATED proposers too, deliberately — a node resolving a
+# Keyed by the proposer alone and written by the proposer itself, so it answers
+# whether or not that proposer is admitted for any account — a node resolving a
 # proposer named in an older attestation request needs the endpoint it served
-# from, and whether it is still admitted is a separate question.
+# from, and admission is a separate question (isAllowedProposer, below).
 PROPOSER_URL: Final[dict[str, Any]] = {
     "name": "getProposerUrl",
     "type": "function",
