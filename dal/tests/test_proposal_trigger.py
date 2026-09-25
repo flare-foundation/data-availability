@@ -117,8 +117,9 @@ class TestDiscovery:
         assert params["proposer"] != CLAIM_BACK
 
     def test_the_generation_the_proposal_binds_to_is_kept(self):
-        # Needed later to ask whether the proposer was admitted for THAT
-        # contest, rather than at whatever moment the fetch happens.
+        # Not for admission, which is asked live. An expectation is never
+        # re-derived, so it is the only record of the request, and the
+        # generation is what says when the proposal stops being finalizable.
         discover([instruction_log(request_message(generation=9))])
         assert Expectation.objects.get().params["generation"] == 9
 

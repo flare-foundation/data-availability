@@ -317,6 +317,9 @@ def _proposal_expectation(parsed, *, proposer, block, now, ttl) -> int:
                 "walletRegistry": parsed["wallet_registry"],
                 "walletId": f"0x{parsed['wallet_id'].hex()}",
                 "accountIndex": parsed["account_index"],
+                # Recorded, not consulted: admission is asked live. It is kept
+                # because an expectation is never re-derived, and the generation
+                # is what says when the proposal stops being finalizable.
                 "generation": parsed["generation"],
                 "blockNumber": block,
             },

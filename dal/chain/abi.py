@@ -9,7 +9,9 @@ interface, so something has to carry the shape.
 The signature strings below are canonical: they are what ``topic0`` is the
 keccak of, so a typo produces a filter that matches nothing, which is
 indistinguishable from a contract that never emitted. Every one of them is
-covered by a test that recomputes the topic from the ABI.
+covered by a test that recomputes the topic from the ABI. The functions are
+pinned the same way, by selector against the compiled interface, because a
+call the diamond does not cut fails only at run time, as ``FunctionNotFound``.
 """
 
 from typing import Any, Final
@@ -17,10 +19,10 @@ from typing import Any, Final
 from eth_utils.abi import event_abi_to_log_topic
 
 __all__ = [
-    "FDC2_ATTESTATION_REQUEST",
-    "IS_ALLOWED_PROPOSER_AT",
     "CSP_PROPOSAL_CHECK",
+    "FDC2_ATTESTATION_REQUEST",
     "GET_CSP_ACCOUNT",
+    "IS_ALLOWED_PROPOSER",
     "PROPOSAL_REQUEST_BODY",
     "PROPOSER_URL",
     "TEE_INSTRUCTIONS_SENT",
@@ -121,8 +123,15 @@ GET_CSP_ACCOUNT: Final[dict[str, Any]] = {
     ],
 }
 
-IS_ALLOWED_PROPOSER_AT: Final[dict[str, Any]] = {
-    "name": "isAllowedProposerAt",
+# CspProposalsFacet.isAllowedProposer((bytes32,string),address) -> bool
+#
+# The check finalizeProposal makes, asked the way it makes it: the account's
+# proposer list if it has one, otherwise its project's, and a project with no
+# list admits every proposer. The lists are read live, so there is no
+# generation to ask at — a list change applies to every proposal finalized
+# after it, a contest under way included.
+IS_ALLOWED_PROPOSER: Final[dict[str, Any]] = {
+    "name": "isAllowedProposer",
     "type": "function",
     "stateMutability": "view",
     "inputs": [
@@ -135,7 +144,6 @@ IS_ALLOWED_PROPOSER_AT: Final[dict[str, Any]] = {
             ],
         },
         {"name": "proposer", "type": "address"},
-        {"name": "generation", "type": "uint64"},
     ],
     "outputs": [{"name": "", "type": "bool"}],
 }

@@ -55,15 +55,16 @@ def collect_proposal(
     proposer: str,
     package_hash: bytes,
     txid: bytes | None = None,
-    generation: int | None = None,
     allow_private: bool = False,
     ttl: timedelta = DEFAULT_TTL,
 ) -> ProposalOutcome:
     """Fetch one committed package from its proposer, gate it, and store it.
 
-    ``generation`` is optional and, when given, is checked against the registry
-    AT THAT GENERATION rather than at latest — a proposal is judged under the
-    rules that were in force when its contest opened.
+    Only while the proposer is admitted for the account, asked on every attempt
+    at latest — the contract reads the proposer lists live when it finalizes,
+    so there is no earlier answer to prefer. A proposer that is not admitted
+    leaves the expectation open, like a package not yet published: the owner
+    can still list it before the proposal is finalized.
     """
     key = package_hash.hex()
     now = timezone.now()
@@ -81,35 +82,38 @@ def collect_proposal(
             proposer,
         )
 
-    if generation is not None and not registry.is_allowed_at(
-        wallet_registry, wallet_id, account_index, proposer, generation
-    ):
-        return _refuse(
-            key,
-            now,
-            f"proposer {proposer} was not admitted for generation {generation}",
-            ttl,
-            wallet_registry,
-            wallet_id,
-            account_index,
-            proposer,
-        )
-
     expectation, _ = Expectation.objects.get_or_create(
         key=key,
         defaults={
             "message_class": MessageClass.PROPOSAL,
             "trigger_ref": f"{wallet_registry}/0x{wallet_id.hex()}/{account_index}",
             "origin": entry.url,
+            # The account as well as the proposer, so an expectation opened
+            # here rather than by the trigger can be retried by
+            # collect_open_proposals, which reads nothing else.
             "params": {
                 "proposer": proposer,
                 "packageHash": f"0x{key}",
-                "generation": generation,
+                "walletRegistry": wallet_registry,
+                "walletId": f"0x{wallet_id.hex()}",
+                "accountIndex": account_index,
             },
             "first_seen_at": now,
             "expires_at": now + ttl,
         },
     )
+
+    if not registry.is_allowed(wallet_registry, wallet_id, account_index, proposer):
+        # NOT a refusal. A refusal is terminal and never retried, while this
+        # answer can change: the lists are the owner's to edit at any time and
+        # the contract judges the proposal by them as they stand when it is
+        # finalized. Refusing here would withhold, for good, a package the
+        # contract may yet accept. Nothing is fetched while it stands.
+        expectation.attempts += 1
+        expectation.last_attempt_at = now
+        expectation.reason = f"proposer {proposer} is not admitted for the account"
+        expectation.save(update_fields=["attempts", "last_attempt_at", "reason"])
+        return ProposalOutcome(False, expectation.reason, key)
 
     try:
         resolved = resolve(entry.url, allow_private=allow_private)
@@ -239,7 +243,6 @@ def collect_open_proposals(
                 account_index=int(params.get("accountIndex", 0)),
                 proposer=params["proposer"],
                 package_hash=package_hash,
-                generation=params.get("generation"),
                 allow_private=allow_private,
             )
         )

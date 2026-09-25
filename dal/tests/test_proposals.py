@@ -9,7 +9,7 @@ kept or quietly broken.
 import http.server
 import json
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar
 
@@ -20,7 +20,7 @@ from eth_utils.crypto import keccak
 
 from dal.gate.signing import CSP_PROPOSAL, payload_hash
 from dal.models import Artifact, ArtifactIndex, Expectation, ExpectationState
-from dal.proposals import collect_proposal
+from dal.proposals import collect_open_proposals, collect_proposal
 
 CHAIN_ID = json.loads((Path(__file__).parent / "vectors.json").read_text())[0][
     "chainId"
@@ -44,26 +44,28 @@ class FakeRegistry:
     url: str
     exists: bool = True
     allowed: bool = True
+    asked: list = field(default_factory=list)
 
     def proposer(self, wallet_id, account_index, proposer):
         from dal.chain.registry import ProposerEntry
 
         return ProposerEntry(url=self.url, exists=self.exists)
 
-    def is_allowed_at(
-        self, wallet_registry, wallet_id, account_index, proposer, generation
-    ):
+    def is_allowed(self, wallet_registry, wallet_id, account_index, proposer):
         # Asserted rather than ignored: the registry is half of what identifies
         # the account, and a caller that dropped it would otherwise pass here
         # and resolve to the wrong account on a real chain.
         assert wallet_registry == REGISTRY
+        self.asked.append((wallet_registry, wallet_id, account_index, proposer))
         return self.allowed
 
 
 class _Origin(http.server.BaseHTTPRequestHandler):
     store: ClassVar[dict] = {}
+    requests: ClassVar[list] = []
 
     def do_GET(self):
+        self.requests.append(self.path)
         body = self.store.get(self.path.lstrip("/"))
         if body is None:
             self.send_response(404)
@@ -81,6 +83,7 @@ class _Origin(http.server.BaseHTTPRequestHandler):
 @pytest.fixture
 def origin():
     _Origin.store = {}
+    _Origin.requests = []
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Origin)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{server.server_address[1]}", _Origin.store
@@ -192,24 +195,89 @@ class TestRefusal:
 
 
 @pytest.mark.django_db
-class TestGenerationBinding:
-    def test_a_proposer_not_admitted_for_that_generation_is_refused(self, origin):
-        # A contest has a defined window: judging at latest would let a registry
-        # edit invalidate a proposal already voted on.
+class TestProposerAdmission:
+    """Who may propose is the contract's live check, asked on every attempt.
+
+    ``finalizeProposal`` reads the proposer lists as they stand when it runs,
+    so an answer is true only of the block it was read at. These tests hold the
+    DAL to the consequence: a proposer that is not admitted is waited for, not
+    refused, and its package is fetched once the owner admits it.
+    """
+
+    def test_a_proposer_not_admitted_is_not_fetched(self, origin):
         url, store = origin
         raw = package()
         h = keccak(raw)
         store[h.hex()] = raw
 
-        outcome = collect(
-            url, h, generation=7, registry=FakeRegistry(url, allowed=False)
-        )
+        outcome = collect(url, h, registry=FakeRegistry(url, allowed=False))
         assert not outcome.admitted
-        assert "generation 7" in outcome.reason
+        assert "not admitted" in outcome.reason
+        assert _Origin.requests == []
+        assert not Artifact.objects.exists()
 
-    def test_membership_is_not_consulted_when_no_generation_is_given(self, origin):
+    def test_not_admitted_is_not_a_refusal(self, origin):
+        # A refusal is terminal and never retried; this answer can change the
+        # next block. Recording it as REFUSED would withhold for good a package
+        # the contract may still accept.
         url, store = origin
         raw = package()
         h = keccak(raw)
         store[h.hex()] = raw
-        assert collect(url, h, registry=FakeRegistry(url, allowed=False)).admitted
+
+        collect(url, h, registry=FakeRegistry(url, allowed=False))
+        e = Expectation.objects.get()
+        assert e.state == ExpectationState.OPEN
+        assert e.attempts == 1
+        assert "not admitted" in e.reason
+
+    def test_a_proposer_admitted_later_is_collected(self, origin):
+        url, store = origin
+        raw = package()
+        h = keccak(raw)
+        store[h.hex()] = raw
+        registry = FakeRegistry(url, allowed=False)
+
+        assert not collect(url, h, registry=registry).admitted
+        registry.allowed = True  # the owner lists the proposer
+        assert collect(url, h, registry=registry).admitted
+        e = Expectation.objects.get()
+        assert e.state == ExpectationState.MET
+        assert e.reason == ""
+
+    def test_membership_is_asked_for_the_account_and_the_proposer(self, origin):
+        # No generation: the contract has none to ask at. The fake's signature
+        # is the live call's, so a caller still passing one fails here.
+        url, store = origin
+        raw = package()
+        h = keccak(raw)
+        store[h.hex()] = raw
+        registry = FakeRegistry(url)
+
+        assert collect(url, h, registry=registry).admitted
+        assert registry.asked == [(REGISTRY, WALLET, 0, PROPOSER)]
+
+    def test_the_collector_retries_until_the_proposer_is_admitted(self, origin):
+        # The automatic path: an expectation opened while the proposer was not
+        # admitted is picked up again on the next tick, with the account it
+        # recorded, and collected once the answer changes.
+        url, store = origin
+        raw = package()
+        h = keccak(raw)
+        store[h.hex()] = raw
+        registry = FakeRegistry(url, allowed=False)
+        collect(url, h, registry=registry)
+
+        tick = collect_open_proposals(
+            registry=registry, chain_id=CHAIN_ID, allow_private=True
+        )
+        assert [o.admitted for o in tick] == [False]
+        assert Expectation.objects.get().attempts == 2
+
+        registry.allowed = True
+        tick = collect_open_proposals(
+            registry=registry, chain_id=CHAIN_ID, allow_private=True
+        )
+        assert [o.admitted for o in tick] == [True]
+        assert Expectation.objects.get().state == ExpectationState.MET
+        assert registry.asked[-1] == (REGISTRY, WALLET, 0, PROPOSER)

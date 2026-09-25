@@ -35,11 +35,6 @@ class Command(BaseCommand):
         parser.add_argument(
             "--txid", help="index the package under the txid it describes, too"
         )
-        parser.add_argument(
-            "--generation",
-            type=int,
-            help="check admission AT this eligibility generation rather than at latest",
-        )
 
     def handle(self, *args, **options):
         if settings.DAL_CHAIN_ID is None:
@@ -60,7 +55,6 @@ class Command(BaseCommand):
             proposer=options["proposer"],
             package_hash=unhex(options["package_hash"], "package hash"),
             txid=unhex(options["txid"], "txid") if options["txid"] else None,
-            generation=options["generation"],
             allow_private=settings.DAL_ALLOW_PRIVATE_ORIGINS,
         )
 

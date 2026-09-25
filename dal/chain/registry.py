@@ -1,15 +1,18 @@
 """Reading the proposer registry from the channel contract.
 
 State comes from the contracts directly over RPC, at latest — the DAL keeps no
-chain index of its own. For one question that is not good enough, and the
-exception is deliberate: **membership is asked at the generation a proposal
-binds to**, because a contest has a defined window and judging it against later
-state would let a registry edit invalidate a proposal already voted on. The
-contract exposes `isAllowedProposerAt` for exactly that.
+chain index of its own, and for both questions asked here latest is the right
+block rather than an approximation of one:
 
-The endpoint, by contrast, is read at latest and that is fine: a wrong or moved
-URL yields bytes that fail the hash and are refused, so it costs a fetch rather
-than correctness.
+* **Membership** is `isAllowedProposer`, which is what `finalizeProposal`
+  checks, and the contract reads the proposer lists live: a list change applies
+  to every proposal finalized after it, a contest under way included. There is
+  no earlier state a proposal is judged against, so an answer holds for the
+  block it was read at and no longer — which is why a "no" here leaves a
+  proposal waiting rather than refused.
+* **The endpoint** is read at latest too, and that is fine: a wrong or moved URL
+  yields bytes that fail the hash and are refused, so it costs a fetch rather
+  than correctness.
 
 **Two addressing schemes, both current.** An FDC2 `CspProposalCheck` request
 names an account as `(walletRegistry, walletId, accountIndex)`; the TeePayments
@@ -37,7 +40,7 @@ from dataclasses import dataclass
 
 from web3 import Web3
 
-from dal.chain.abi import GET_CSP_ACCOUNT, IS_ALLOWED_PROPOSER_AT, PROPOSER_URL
+from dal.chain.abi import GET_CSP_ACCOUNT, IS_ALLOWED_PROPOSER, PROPOSER_URL
 
 logger = logging.getLogger(__name__)
 
@@ -50,12 +53,10 @@ class ProposerEntry:
 
     ``exists`` is derived rather than reported: the diamond's
     ``getProposerUrl`` returns the string alone, and an unregistered proposer
-    is an empty one. The admission WINDOW is deliberately not here — it used to
-    be, when the registry answered ``(url, exists, activeFrom, activeUntil)``,
-    and nothing ever read the two bounds because the only question worth asking
-    is ``isAllowedProposerAt`` at a specific generation. Two fields that were
-    always ignored are worse than absent: they invite a caller to compare
-    against ``now``, which is exactly the judgement this module exists to avoid.
+    is an empty one. Admission is deliberately not here. The directory is keyed
+    by proposer alone and gates nothing; whether a proposer may propose is a
+    per-account question the contract answers from the proposer lists, and
+    ``Registry.is_allowed`` asks it. An endpoint that exists is not permission.
     """
 
     url: str
@@ -134,21 +135,27 @@ class Registry:
         )
         return ProposerEntry(url=url, exists=bool(url))
 
-    def is_allowed_at(
+    def is_allowed(
         self,
         wallet_registry: str,
         wallet_id: bytes,
         account_index: int,
         proposer: str,
-        generation: int,
     ) -> bool:
-        """Was this proposer admitted for THAT generation? Never for 'now'."""
+        """May this proposer propose for the account, as the lists stand now?
+
+        The contract's own check: the account's list if it has one, otherwise
+        its project's, and a project with no list admits every proposer — as
+        does a custodian wallet's account, which has no project, until its
+        owner sets an account list. ``finalizeProposal`` reads the same lists
+        live, so ``False`` is a statement about this block and not a verdict on
+        the proposal: the owner can list the proposer before it is finalized.
+        """
         return (
-            self._contract(IS_ALLOWED_PROPOSER_AT)
-            .functions.isAllowedProposerAt(
+            self._contract(IS_ALLOWED_PROPOSER)
+            .functions.isAllowedProposer(
                 self.account(wallet_registry, wallet_id, account_index),
                 Web3.to_checksum_address(proposer),
-                generation,
             )
             .call()
         )
