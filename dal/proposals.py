@@ -49,9 +49,8 @@ def collect_proposal(
     *,
     registry,
     chain_id: int,
-    wallet_registry: str,
-    wallet_id: bytes,
-    account_index: int,
+    source_id: bytes,
+    sender_address: str,
     proposer: str,
     package_hash: bytes,
     txid: bytes | None = None,
@@ -69,16 +68,15 @@ def collect_proposal(
     key = package_hash.hex()
     now = timezone.now()
 
-    entry = registry.proposer(wallet_id, account_index, proposer)
+    entry = registry.proposer(proposer)
+    trigger_ref = _account_ref(source_id, sender_address)
     if not entry.exists or not entry.url:
         return _refuse(
             key,
             now,
             f"proposer {proposer} has no registered endpoint",
             ttl,
-            wallet_registry,
-            wallet_id,
-            account_index,
+            trigger_ref,
             proposer,
         )
 
@@ -86,7 +84,7 @@ def collect_proposal(
         key=key,
         defaults={
             "message_class": MessageClass.PROPOSAL,
-            "trigger_ref": f"{wallet_registry}/0x{wallet_id.hex()}/{account_index}",
+            "trigger_ref": trigger_ref,
             "origin": entry.url,
             # The account as well as the proposer, so an expectation opened
             # here rather than by the trigger can be retried by
@@ -94,16 +92,15 @@ def collect_proposal(
             "params": {
                 "proposer": proposer,
                 "packageHash": f"0x{key}",
-                "walletRegistry": wallet_registry,
-                "walletId": f"0x{wallet_id.hex()}",
-                "accountIndex": account_index,
+                "sourceId": f"0x{source_id.hex()}",
+                "senderAddress": sender_address,
             },
             "first_seen_at": now,
             "expires_at": now + ttl,
         },
     )
 
-    if not registry.is_allowed(wallet_registry, wallet_id, account_index, proposer):
+    if not registry.is_allowed(source_id, sender_address, proposer):
         # NOT a refusal. A refusal is terminal and never retried, while this
         # answer can change: the lists are the owner's to edit at any time and
         # the contract judges the proposal by them as they stand when it is
@@ -180,12 +177,17 @@ def collect_proposal(
     return ProposalOutcome(True, "", key)
 
 
-def _refuse(key, now, reason, ttl, wallet_registry, wallet_id, account_index, proposer):
+def _account_ref(source_id: bytes, sender_address: str) -> str:
+    """The account as a trigger reference: ``0x<sourceId>/<senderAddress>``."""
+    return f"0x{source_id.hex()}/{sender_address}"
+
+
+def _refuse(key, now, reason, ttl, trigger_ref, proposer):
     expectation, _ = Expectation.objects.get_or_create(
         key=key,
         defaults={
             "message_class": MessageClass.PROPOSAL,
-            "trigger_ref": f"{wallet_registry}/0x{wallet_id.hex()}/{account_index}",
+            "trigger_ref": trigger_ref,
             "origin": "",
             "params": {"proposer": proposer},
             "first_seen_at": now,
@@ -223,13 +225,12 @@ def collect_open_proposals(
     for expectation in open_proposals:
         params = expectation.params
         try:
-            wallet_id = bytes.fromhex(params["walletId"].removeprefix("0x"))
+            # No defaults. An expectation that does not name its account
+            # cannot be asked about; a guessed account would get a confident
+            # wrong answer from the chain instead of leaving the proposal open.
+            source_id = bytes.fromhex(params["sourceId"].removeprefix("0x"))
+            sender_address = params["senderAddress"]
             package_hash = bytes.fromhex(params["packageHash"].removeprefix("0x"))
-            # No default. An expectation without a registry predates the
-            # control-plane split and cannot be resolved to an account; falling
-            # back to a zero address would ask the chain a question with a
-            # confident wrong answer instead of leaving the proposal open.
-            wallet_registry = params["walletRegistry"]
         except KeyError, ValueError:
             logger.warning("DAL: proposal %s has unusable params", expectation.key)
             continue
@@ -238,9 +239,8 @@ def collect_open_proposals(
             collect_proposal(
                 registry=registry,
                 chain_id=chain_id,
-                wallet_registry=wallet_registry,
-                wallet_id=wallet_id,
-                account_index=int(params.get("accountIndex", 0)),
+                source_id=source_id,
+                sender_address=sender_address,
                 proposer=params["proposer"],
                 package_hash=package_hash,
                 allow_private=allow_private,

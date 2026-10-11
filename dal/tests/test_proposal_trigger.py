@@ -28,28 +28,32 @@ from dal.chain.triggers import OP_FDC2, OP_PROVE, discover_proposal_requests
 from dal.models import Expectation, ExpectationState
 
 CONTRACT = "1234567890abcdef1234567890abcdef12345678"
-WALLET = b"\x11" * 32
+SENDER = "bcrt1qexampleaccount"
+SOURCE = attestation_type("testBTC")
 PACKAGE = b"\xab" * 32
 SUBMITTER = to_checksum_address("0x" + "0" * 36 + "5e11")
 CLAIM_BACK = to_checksum_address("0x" + "0" * 36 + "c1a1")
-REGISTRY = to_checksum_address("0x" + "0" * 36 + "7e61")
 TX = "cd" * 32
 
 
 def request_message(
     package=PACKAGE,
-    wallet=WALLET,
+    sender=SENDER,
     generation=3,
     a_type=CSP_PROPOSAL_CHECK,
-    registry=REGISTRY,
+    source=SOURCE,
+    body=None,
 ) -> bytes:
-    body = abi_encode(
-        ["address", "bytes32", "uint32", "uint64", "uint32", "uint64", "bytes32"],
-        [registry, wallet, 0, 7, 0, generation, package],
-    )
+    # ICspProposalCheck.RequestBody: (senderAddress, sequencePosition, attempt,
+    # eligibleGeneration, packageHash).
+    if body is None:
+        body = abi_encode(
+            ["string", "uint64", "uint32", "uint64", "bytes32"],
+            [sender, 7, 0, generation, package],
+        )
     return abi_encode(
         ["((bytes32,bytes32,uint16,address),bytes)"],
-        [((a_type, attestation_type("BTC"), 0, "0x" + "00" * 20), body)],
+        [((a_type, source, 0, "0x" + "00" * 20), body)],
     )
 
 
@@ -123,6 +127,15 @@ class TestDiscovery:
         discover([instruction_log(request_message(generation=9))])
         assert Expectation.objects.get().params["generation"] == 9
 
+    def test_the_account_is_the_source_and_the_sender_address(self):
+        # (header.sourceId, senderAddress) is the WalletAccount the diamond's
+        # reads take, so it is recorded exactly as isAllowedProposer is asked.
+        discover([instruction_log(request_message())])
+        e = Expectation.objects.get()
+        assert e.params["sourceId"] == "0x" + SOURCE.hex()
+        assert e.params["senderAddress"] == SENDER
+        assert e.trigger_ref == f"0x{SOURCE.hex()}/{SENDER}#7.0"
+
     def test_a_reissued_request_is_a_retry_not_a_rival(self):
         # An identical request may be submitted again for another processing
         # round. The FIRST commitment keeps provenance, so the second must not
@@ -160,6 +173,17 @@ class TestWhatIsIgnored:
     def test_a_non_fdc2_instruction_is_ignored(self):
         log = instruction_log(request_message(), op_type=b"F_BTC".ljust(32, b"\x00"))
         assert discover([log]).expectations_created == 0
+
+    def test_a_body_in_another_layout_is_not_a_proposal(self):
+        # A body whose head is not a string offset (here a leading address, as
+        # a wallet-registry-first layout would carry) fails to decode rather
+        # than yielding a shifted account.
+        body = abi_encode(
+            ["address", "bytes32", "uint32", "uint64", "uint32", "uint64", "bytes32"],
+            [CLAIM_BACK, b"\x11" * 32, 0, 7, 0, 3, PACKAGE],
+        )
+        message = request_message(body=body)
+        assert discover([instruction_log(message)]).expectations_created == 0
 
     def test_an_undecodable_message_does_not_stop_the_scan(self):
         bad = dataclasses.replace(instruction_log(request_message()), data="00ff")

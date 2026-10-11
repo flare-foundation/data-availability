@@ -269,9 +269,7 @@ def _proposal_request(message: bytes) -> dict | None:
         if header[0] != CSP_PROPOSAL_CHECK:
             return None
         (
-            wallet_registry,
-            wallet_id,
-            account_index,
+            sender_address,
             sequence,
             attempt,
             generation,
@@ -282,9 +280,8 @@ def _proposal_request(message: bytes) -> dict | None:
 
     _ = FDC2_ATTESTATION_REQUEST  # documented shape; decoded positionally above
     return {
-        "wallet_registry": wallet_registry,
-        "wallet_id": wallet_id,
-        "account_index": account_index,
+        "source_id": header[1],
+        "sender_address": sender_address,
         "sequence_position": sequence,
         "attempt": attempt,
         "generation": generation,
@@ -304,19 +301,17 @@ def _proposal_expectation(parsed, *, proposer, block, now, ttl) -> int:
         key=key,
         defaults={
             "message_class": MessageClass.PROPOSAL,
-            # The registry is part of the reference because it is part of the
-            # identity: two registries may issue the same wallet id, so a
-            # trigger naming only the wallet reads as one account across both.
-            "trigger_ref": f"{parsed['wallet_registry']}"
-            f"/0x{parsed['wallet_id'].hex()}/{parsed['account_index']}"
+            # The account is (sourceId, senderAddress): the same address string
+            # on two source chains is two accounts.
+            "trigger_ref": f"0x{parsed['source_id'].hex()}"
+            f"/{parsed['sender_address']}"
             f"#{parsed['sequence_position']}.{parsed['attempt']}",
             "origin": "",  # resolved from the registry when it is fetched
             "params": {
                 "proposer": proposer,
                 "packageHash": f"0x{key}",
-                "walletRegistry": parsed["wallet_registry"],
-                "walletId": f"0x{parsed['wallet_id'].hex()}",
-                "accountIndex": parsed["account_index"],
+                "sourceId": f"0x{parsed['source_id'].hex()}",
+                "senderAddress": parsed["sender_address"],
                 # Recorded, not consulted: admission is asked live. It is kept
                 # because an expectation is never re-derived, and the generation
                 # is what says when the proposal stops being finalizable.

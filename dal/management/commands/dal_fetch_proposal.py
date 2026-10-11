@@ -17,14 +17,16 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--wallet-registry",
+            "--source-id",
             required=True,
-            help="the registry the wallet is on — an account is "
-            "(walletRegistry, walletId, accountIndex), because wallet ids of "
-            "different registries may collide",
+            help="the account's source chain, as the request header's sourceId "
+            "(32 bytes hex)",
         )
-        parser.add_argument("--wallet-id", required=True)
-        parser.add_argument("--account-index", type=int, default=0)
+        parser.add_argument(
+            "--sender-address",
+            required=True,
+            help="the account's address on that chain, as the request's senderAddress",
+        )
         parser.add_argument(
             "--proposer",
             required=True,
@@ -49,9 +51,8 @@ class Command(BaseCommand):
         outcome = collect_proposal(
             registry=registry_module.from_settings(),
             chain_id=settings.DAL_CHAIN_ID,
-            wallet_registry=options["wallet_registry"],
-            wallet_id=unhex(options["wallet_id"], "wallet id"),
-            account_index=options["account_index"],
+            source_id=unhex(options["source_id"], "source id"),
+            sender_address=options["sender_address"],
             proposer=options["proposer"],
             package_hash=unhex(options["package_hash"], "package hash"),
             txid=unhex(options["txid"], "txid") if options["txid"] else None,

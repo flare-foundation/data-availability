@@ -21,7 +21,6 @@ from eth_utils.abi import event_abi_to_log_topic
 __all__ = [
     "CSP_PROPOSAL_CHECK",
     "FDC2_ATTESTATION_REQUEST",
-    "GET_CSP_ACCOUNT",
     "IS_ALLOWED_PROPOSER",
     "PROPOSAL_REQUEST_BODY",
     "PROPOSER_URL",
@@ -88,41 +87,6 @@ PROPOSER_URL: Final[dict[str, Any]] = {
     "outputs": [{"name": "url", "type": "string"}],
 }
 
-# CspInstructionsFacet.getCspAccount(address,bytes32,uint32) -> WalletAccount
-#
-# The diamond addresses an account by (sourceId, accountAddress); an FDC2
-# CspProposalCheck request names it as (walletRegistry, walletId, accountIndex).
-# This is the join, and reading it from the chain is what keeps the DAL free of
-# per-deployment account configuration: the triple is already in the request,
-# and the contract turns it into the struct its own reads expect.
-#
-# The REGISTRY is the third of those, and it is not decoration: wallet ids of
-# different registries may collide, so (walletId, accountIndex) alone no longer
-# names one account. It is also requester-supplied and therefore attacker-chosen
-# — naming a registry you control is how you would try to be resolved to an
-# account you own. Nothing here decides anything on it; the verifier answers
-# only about its configured registry and the contract checks again.
-GET_CSP_ACCOUNT: Final[dict[str, Any]] = {
-    "name": "getCspAccount",
-    "type": "function",
-    "stateMutability": "view",
-    "inputs": [
-        {"name": "walletRegistry", "type": "address"},
-        {"name": "walletId", "type": "bytes32"},
-        {"name": "accountIndex", "type": "uint32"},
-    ],
-    "outputs": [
-        {
-            "name": "",
-            "type": "tuple",
-            "components": [
-                {"name": "sourceId", "type": "bytes32"},
-                {"name": "accountAddress", "type": "string"},
-            ],
-        }
-    ],
-}
-
 # CspProposalsFacet.isAllowedProposer((bytes32,string),address) -> bool
 #
 # The check finalizeProposal makes, asked the way it makes it: the account's
@@ -177,16 +141,13 @@ FDC2_ATTESTATION_REQUEST: Final[dict[str, Any]] = {
 # The request body of CspProposalCheck. `packageHash` is the commitment the
 # proposer made before publishing anything.
 #
-# `walletRegistry` LEADS, and it was not there before the control plane was
-# split from the execution plane: an account is identified by the triple
-# (walletRegistry, walletId, accountIndex), because wallet ids of different
-# registries may collide. Decoding without it silently shifts every later field
-# by one word, and the decode then fails rather than lying — which is the only
-# reason this was cheap to find.
+# The account is `(header.sourceId, senderAddress)` — the WalletAccount struct
+# the diamond's own reads take — so the request names it in the form
+# isAllowedProposer is asked in, and no join through the chain is needed.
+# `senderAddress` is a dynamic string: decoding with any other leading type
+# fails rather than shifting the fields that follow it.
 PROPOSAL_REQUEST_BODY: Final[list[str]] = [
-    "address",  # walletRegistry
-    "bytes32",  # walletId
-    "uint32",  # accountIndex
+    "string",  # senderAddress
     "uint64",  # sequencePosition
     "uint32",  # attempt
     "uint64",  # eligibleGeneration

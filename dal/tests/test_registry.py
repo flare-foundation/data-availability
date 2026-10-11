@@ -14,22 +14,19 @@ from eth_utils.abi import function_abi_to_4byte_selector
 from web3 import Web3
 from web3.providers.base import BaseProvider
 
-from dal.chain.abi import GET_CSP_ACCOUNT, IS_ALLOWED_PROPOSER, PROPOSER_URL
+from dal.chain.abi import IS_ALLOWED_PROPOSER, PROPOSER_URL
 from dal.chain.registry import Registry
 
-WALLET_REGISTRY = Web3.to_checksum_address("0x" + "0" * 36 + "7e61")
 CHANNEL = Web3.to_checksum_address("0x" + "0" * 36 + "c4a1")
 PROPOSER = Web3.to_checksum_address("0x" + "0" * 36 + "5e11")
-WALLET = b"\x11" * 32
 SOURCE_ID = b"BTC".ljust(32, b"\x00")
 ACCOUNT_ADDRESS = "bcrt1qexampleaccount"
 
-# From IIWalletPayments as compiled at flare-smart-contracts-v2 a62c0acb — the
-# interface the TeePayments diamond cuts. Literals, because a selector computed
+# From IIWalletPayments as compiled at flare-smart-contracts-v2 e4d6d26c — the
+# interface the WalletPayments diamond cuts. Literals, because a selector computed
 # from the DAL's own ABI agrees with whatever that ABI says.
 SELECTORS = {
     "isAllowedProposer((bytes32,string),address)": "41cac86b",
-    "getCspAccount(address,bytes32,uint32)": "c154c258",
     "getProposerUrl(address)": "6cb39f40",
 }
 
@@ -38,7 +35,6 @@ SELECTORS = {
     ("abi", "signature"),
     [
         (IS_ALLOWED_PROPOSER, "isAllowedProposer((bytes32,string),address)"),
-        (GET_CSP_ACCOUNT, "getCspAccount(address,bytes32,uint32)"),
         (PROPOSER_URL, "getProposerUrl(address)"),
     ],
 )
@@ -66,9 +62,7 @@ class FakeDiamond(BaseProvider):
         selector, args = data[:4].hex(), data[4:]
         self.calls.append((selector, args))
 
-        if selector == SELECTORS["getCspAccount(address,bytes32,uint32)"]:
-            result = abi_encode(["(bytes32,string)"], [(SOURCE_ID, ACCOUNT_ADDRESS)])
-        elif selector == SELECTORS["isAllowedProposer((bytes32,string),address)"]:
+        if selector == SELECTORS["isAllowedProposer((bytes32,string),address)"]:
             result = abi_encode(["bool"], [self.allowed])
         else:
             return {
@@ -90,16 +84,18 @@ class TestIsAllowed:
     def test_the_answer_is_the_contracts(self, allowed):
         registry = registry_on(FakeDiamond(allowed))
         assert (
-            registry.is_allowed(WALLET_REGISTRY, WALLET, 0, PROPOSER.lower()) is allowed
+            registry.is_allowed(SOURCE_ID, ACCOUNT_ADDRESS, PROPOSER.lower()) is allowed
         )
 
-    def test_it_asks_the_live_check_for_the_resolved_account(self):
-        # The account struct the diamond resolved, and the proposer — no
-        # generation. The lists are read live, so there is none to ask at.
+    def test_it_asks_the_live_check_for_the_named_account(self):
+        # The account struct exactly as the request names it, and the
+        # proposer — no generation. The lists are read live, so there is none
+        # to ask at. One call: nothing resolves the account first.
         chain = FakeDiamond(allowed=True)
-        registry_on(chain).is_allowed(WALLET_REGISTRY, WALLET, 3, PROPOSER)
+        registry_on(chain).is_allowed(SOURCE_ID, ACCOUNT_ADDRESS, PROPOSER)
 
-        (selector, args) = chain.calls[-1]
+        assert len(chain.calls) == 1
+        (selector, args) = chain.calls[0]
         assert selector == SELECTORS["isAllowedProposer((bytes32,string),address)"]
         account, proposer = abi_decode(["(bytes32,string)", "address"], args)
         assert account == (SOURCE_ID, ACCOUNT_ADDRESS)
@@ -113,14 +109,22 @@ class TestIsAllowed:
             )
         )
 
-    def test_the_account_is_resolved_from_the_full_triple(self):
-        chain = FakeDiamond(allowed=True)
-        registry_on(chain).is_allowed(WALLET_REGISTRY, WALLET, 3, PROPOSER)
 
-        (selector, args) = chain.calls[0]
-        assert selector == SELECTORS["getCspAccount(address,bytes32,uint32)"]
-        registry, wallet_id, account_index = abi_decode(
-            ["address", "bytes32", "uint32"], args
-        )
-        assert Web3.to_checksum_address(registry) == WALLET_REGISTRY
-        assert (wallet_id, account_index) == (WALLET, 3)
+def test_the_endpoint_is_read_by_proposer_alone():
+    class UrlDiamond(FakeDiamond):
+        def make_request(self, method, params):
+            if method == "eth_call":
+                data = bytes.fromhex(params[0]["data"].removeprefix("0x"))
+                if data[:4].hex() == SELECTORS["getProposerUrl(address)"]:
+                    self.calls.append((data[:4].hex(), data[4:]))
+                    result = abi_encode(["string"], ["http://proposer.example"])
+                    return {"jsonrpc": "2.0", "id": 1, "result": "0x" + result.hex()}
+            return super().make_request(method, params)
+
+    chain = UrlDiamond(allowed=True)
+    entry = registry_on(chain).proposer(PROPOSER)
+    assert entry.exists and entry.url == "http://proposer.example"
+    (selector, args) = chain.calls[0]
+    assert selector == SELECTORS["getProposerUrl(address)"]
+    (proposer,) = abi_decode(["address"], args)
+    assert Web3.to_checksum_address(proposer) == PROPOSER

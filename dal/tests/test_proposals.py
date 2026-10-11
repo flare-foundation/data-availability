@@ -27,8 +27,8 @@ CHAIN_ID = json.loads((Path(__file__).parent / "vectors.json").read_text())[0][
 ]
 PROPOSER_KEY = "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318"
 PROPOSER = Account.from_key(PROPOSER_KEY).address
-WALLET = b"\x11" * 32
-REGISTRY = "0x" + "0" * 36 + "7e61"
+SOURCE_ID = b"testBTC".ljust(32, b"\x00")
+SENDER = "bcrt1qexampleaccount"
 TXID = b"\x22" * 32
 ENVELOPE = b"an abi-encoded ProposalEnvelope"
 
@@ -46,17 +46,13 @@ class FakeRegistry:
     allowed: bool = True
     asked: list = field(default_factory=list)
 
-    def proposer(self, wallet_id, account_index, proposer):
+    def proposer(self, proposer):
         from dal.chain.registry import ProposerEntry
 
         return ProposerEntry(url=self.url, exists=self.exists)
 
-    def is_allowed(self, wallet_registry, wallet_id, account_index, proposer):
-        # Asserted rather than ignored: the registry is half of what identifies
-        # the account, and a caller that dropped it would otherwise pass here
-        # and resolve to the wrong account on a real chain.
-        assert wallet_registry == REGISTRY
-        self.asked.append((wallet_registry, wallet_id, account_index, proposer))
+    def is_allowed(self, source_id, sender_address, proposer):
+        self.asked.append((source_id, sender_address, proposer))
         return self.allowed
 
 
@@ -95,9 +91,8 @@ def collect(url, package_hash, **kwargs):
     return collect_proposal(
         registry=kwargs.pop("registry", FakeRegistry(url)),
         chain_id=kwargs.pop("chain_id", CHAIN_ID),
-        wallet_registry=kwargs.pop("wallet_registry", REGISTRY),
-        wallet_id=WALLET,
-        account_index=0,
+        source_id=kwargs.pop("source_id", SOURCE_ID),
+        sender_address=kwargs.pop("sender_address", SENDER),
         proposer=kwargs.pop("proposer", PROPOSER),
         package_hash=package_hash,
         allow_private=True,
@@ -255,7 +250,7 @@ class TestProposerAdmission:
         registry = FakeRegistry(url)
 
         assert collect(url, h, registry=registry).admitted
-        assert registry.asked == [(REGISTRY, WALLET, 0, PROPOSER)]
+        assert registry.asked == [(SOURCE_ID, SENDER, PROPOSER)]
 
     def test_the_collector_retries_until_the_proposer_is_admitted(self, origin):
         # The automatic path: an expectation opened while the proposer was not
@@ -280,4 +275,4 @@ class TestProposerAdmission:
         )
         assert [o.admitted for o in tick] == [True]
         assert Expectation.objects.get().state == ExpectationState.MET
-        assert registry.asked[-1] == (REGISTRY, WALLET, 0, PROPOSER)
+        assert registry.asked[-1] == (SOURCE_ID, SENDER, PROPOSER)

@@ -14,24 +14,11 @@ block rather than an approximation of one:
   yields bytes that fail the hash and are refused, so it costs a fetch rather
   than correctness.
 
-**Two addressing schemes, both current.** An FDC2 `CspProposalCheck` request
-names an account as `(walletRegistry, walletId, accountIndex)`; the TeePayments
-diamond addresses it as `WalletAccount(sourceId, accountAddress)`. Neither is
-wrong and neither is going away, so this module joins them with the diamond's
-own `getCspAccount(walletRegistry, walletId, accountIndex)` rather than making
-the DAL carry account configuration it would then have to keep in step with a
-deployment.
-
-The registry leads that triple because wallet ids of different registries may
-collide: a wallet id alone stopped naming one account when custody moved onto
-its own registries, so it is part of the key here and part of the cache key.
-
-That join is also what this module got wrong until 2026-09-05: it called
-`proposerUrl(bytes32,uint32,address)`, a pre-diamond signature that no facet
-implements, so every collection attempt died on `FunctionNotFound(0x3be80a1b)`
-before it could fetch anything. The failure was invisible in the obvious place —
-the artifact was published and served correctly the whole time — and surfaced
-only as a verifier 404.
+**The account is named the way the diamond reads it.** An FDC2
+`CspProposalCheck` request carries `senderAddress`, and with the header's
+`sourceId` that is the `WalletAccount(sourceId, accountAddress)` struct
+`isAllowedProposer` takes — so membership is one call, with no account
+resolution in front of it and no per-deployment account configuration here.
 """
 
 import logging
@@ -40,7 +27,7 @@ from dataclasses import dataclass
 
 from web3 import Web3
 
-from dal.chain.abi import GET_CSP_ACCOUNT, IS_ALLOWED_PROPOSER, PROPOSER_URL
+from dal.chain.abi import IS_ALLOWED_PROPOSER, PROPOSER_URL
 
 logger = logging.getLogger(__name__)
 
@@ -66,67 +53,18 @@ class ProposerEntry:
 class Registry:
     """A read-only view of one channel contract."""
 
-    # Bounded for the same reason Submitters' cache is: this is a long-running
-    # collector, and one entry per account it ever sees is a slow leak.
-    ACCOUNT_CACHE_LIMIT = 256
-
     def __init__(self, rpc_url: str, channel_address: str):
         self._w3 = Web3(Web3.HTTPProvider(rpc_url))
         self._address = Web3.to_checksum_address(channel_address)
-        self._accounts: OrderedDict[tuple[str, bytes, int], tuple[bytes, str]] = (
-            OrderedDict()
-        )
 
     def _contract(self, abi):
         return self._w3.eth.contract(address=self._address, abi=[abi])
 
-    def account(
-        self, wallet_registry: str, wallet_id: bytes, account_index: int
-    ) -> tuple[bytes, str]:
-        """Resolve (walletRegistry, walletId, accountIndex) to the account struct.
-
-        The join between two addressing schemes that both remain correct: an
-        FDC2 request names an account positionally, the contract addresses it as
-        (sourceId, accountAddress). Reading it from the chain is what keeps this
-        service free of per-deployment account configuration.
-
-        The registry is requester-supplied and so attacker-chosen. It is safe to
-        resolve on: the answer is only ever an account struct, and whether that
-        account may be spoken for is decided by the verifier against its own
-        configured registry and by the contract when it finalizes. What is NOT
-        safe is dropping it, which is what an older two-part key did.
-
-        Cached because it cannot change for a given triple — a registration is
-        immutable once made — and because it would otherwise be an extra RPC on
-        every membership check, on the one component that must stay up.
-        """
-        key = (wallet_registry, wallet_id, account_index)
-        hit = self._accounts.get(key)
-        if hit is not None:
-            self._accounts.move_to_end(key)
-            return hit
-
-        source_id, address = (
-            self._contract(GET_CSP_ACCOUNT)
-            .functions.getCspAccount(
-                Web3.to_checksum_address(wallet_registry), wallet_id, account_index
-            )
-            .call()
-        )
-        self._accounts[key] = (source_id, address)
-        while len(self._accounts) > self.ACCOUNT_CACHE_LIMIT:
-            self._accounts.popitem(last=False)
-        return source_id, address
-
-    def proposer(
-        self, wallet_id: bytes, account_index: int, proposer: str
-    ) -> ProposerEntry:
+    def proposer(self, proposer: str) -> ProposerEntry:
         """Where a proposer serves.
 
-        Endpoint registration is per PROPOSER, not per account — the account
-        arguments are kept in the signature because callers have them and
-        because the account is what the membership question needs, not because
-        this read consults them.
+        Endpoint registration is per PROPOSER, not per account: one proposer
+        publishes one endpoint for every account it proposes for.
         """
         url = (
             self._contract(PROPOSER_URL)
@@ -135,13 +73,7 @@ class Registry:
         )
         return ProposerEntry(url=url, exists=bool(url))
 
-    def is_allowed(
-        self,
-        wallet_registry: str,
-        wallet_id: bytes,
-        account_index: int,
-        proposer: str,
-    ) -> bool:
+    def is_allowed(self, source_id: bytes, sender_address: str, proposer: str) -> bool:
         """May this proposer propose for the account, as the lists stand now?
 
         The contract's own check: the account's list if it has one, otherwise
@@ -154,7 +86,7 @@ class Registry:
         return (
             self._contract(IS_ALLOWED_PROPOSER)
             .functions.isAllowedProposer(
-                self.account(wallet_registry, wallet_id, account_index),
+                (source_id, sender_address),
                 Web3.to_checksum_address(proposer),
             )
             .call()
