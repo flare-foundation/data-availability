@@ -144,8 +144,11 @@ FDC2_ATTESTATION_REQUEST: Final[dict[str, Any]] = {
 # The account is `(header.sourceId, senderAddress)` — the WalletAccount struct
 # the diamond's own reads take — so the request names it in the form
 # isAllowedProposer is asked in, and no join through the chain is needed.
-# `senderAddress` is a dynamic string: decoding with any other leading type
-# fails rather than shifting the fields that follow it.
+# The body is `abi.encode` of the struct, and `senderAddress` is a dynamic
+# string, so the struct is a tuple behind a 32-byte offset: decode it as ONE
+# tuple of these types. Decoded as five top-level values it fails (the first
+# word is the tuple's offset, not the string's), and so does a body in any
+# other layout, rather than shifting the fields that follow.
 PROPOSAL_REQUEST_BODY: Final[list[str]] = [
     "string",  # senderAddress
     "uint64",  # sequencePosition

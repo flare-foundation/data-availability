@@ -268,13 +268,17 @@ def _proposal_request(message: bytes) -> dict | None:
         header, body = request
         if header[0] != CSP_PROPOSAL_CHECK:
             return None
+        # abi.encode(RequestBody): ONE struct, so a dynamic member makes the
+        # whole body a tuple behind an offset, not five words in a row.
         (
-            sender_address,
-            sequence,
-            attempt,
-            generation,
-            package_hash,
-        ) = abi_decode(PROPOSAL_REQUEST_BODY, body)
+            (
+                sender_address,
+                sequence,
+                attempt,
+                generation,
+                package_hash,
+            ),
+        ) = abi_decode(["(" + ",".join(PROPOSAL_REQUEST_BODY) + ")"], body)
     except Exception:
         return None
 

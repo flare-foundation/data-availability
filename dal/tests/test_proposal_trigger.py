@@ -48,8 +48,8 @@ def request_message(
     # eligibleGeneration, packageHash).
     if body is None:
         body = abi_encode(
-            ["string", "uint64", "uint32", "uint64", "bytes32"],
-            [sender, 7, 0, generation, package],
+            ["(string,uint64,uint32,uint64,bytes32)"],
+            [(sender, 7, 0, generation, package)],
         )
     return abi_encode(
         ["((bytes32,bytes32,uint16,address),bytes)"],
@@ -210,3 +210,40 @@ def test_the_op_identifiers_are_pinned():
     )
     assert OP_PROVE.hex() == "50524f5645" + "00" * 27
     assert CSP_PROPOSAL_CHECK.hex() == b"CspProposalCheck".hex() + "00" * 16
+
+
+# A CspProposalCheck request exactly as the owners' Fdc2Hub put it into a
+# TeeInstructionsSent message on a csp-e2e chain (flare-smart-contracts-v2
+# csp-utxo-payments e4d6d26c, btc-proposer as the requester): the body is
+# abi.encode of the struct, a tuple behind an offset. Every other test here
+# encodes the body itself, so this is the one that would notice the two
+# encoders disagreeing.
+GOLDEN_MESSAGE = bytes.fromhex(
+    "0000000000000000000000000000000000000000000000000000000000000020"
+    "43737050726f706f73616c436865636b00000000000000000000000000000000"
+    "4254430000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "00000000000000000000000000000000000000000000000000000000000000a0"
+    "0000000000000000000000000000000000000000000000000000000000000120"
+    "0000000000000000000000000000000000000000000000000000000000000020"
+    "00000000000000000000000000000000000000000000000000000000000000a0"
+    "0000000000000000000000000000000000000000000000000000000000000001"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000002"
+    "7a2a8ce304619fee50425948955fac717e1ac169f6ccff1e919dbc87dc3a0ab7"
+    "0000000000000000000000000000000000000000000000000000000000000040"
+    "6263727431717664326b36646e6b376e68763879737774676373746370687635"
+    "71763972386d6638726130647334767a686d6838666d73366b7333336574337a"
+)
+
+
+def test_the_hubs_own_bytes_decode():
+    from dal.chain.triggers import _proposal_request
+
+    parsed = _proposal_request(GOLDEN_MESSAGE)
+    assert parsed is not None
+    assert parsed["source_id"] == b"BTC".ljust(32, b"\x00")
+    assert parsed["sender_address"].startswith("bcrt1q")
+    assert parsed["sequence_position"] == 1
+    assert parsed["attempt"] == 0
