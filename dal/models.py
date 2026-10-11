@@ -51,8 +51,11 @@ class Expectation(models.Model):
     message_class = models.CharField(max_length=32, choices=MessageClass)
     # What on chain created this expectation, rendered for the class: an
     # instruction id, or a "protocol/round" pair. Not a foreign key -- the log
-    # it came from is dropped long before this row is.
-    trigger_ref = models.CharField(max_length=128, db_index=True)
+    # it came from is dropped long before this row is. A proposal's is
+    # "0x<sourceId>/<senderAddress>#<position>.<attempt>": 66 characters of
+    # source, up to 90 of bech32 address and two uint64s, so 128 was too
+    # short for any P2WSH account (a regtest one already renders at 135).
+    trigger_ref = models.CharField(max_length=256, db_index=True)
     # Where the artifact should come from. An address for a TEE machine, a
     # configured name for a data-provider client. Recorded even for a G1
     # artifact, where several origins may each be correct and return different

@@ -136,6 +136,17 @@ class TestDiscovery:
         assert e.params["senderAddress"] == SENDER
         assert e.trigger_ref == f"0x{SOURCE.hex()}/{SENDER}#7.0"
 
+    def test_a_p2wsh_account_fits_the_trigger_reference(self):
+        # A real P2WSH account address is 62-64 characters and the source is a
+        # full bytes32, so the reference passes 128 characters. It overflowed a
+        # varchar(128) on Postgres, and the exception stopped the collector.
+        sender = "bcrt1qvxpc2smteghvw5xckh8xs7aen33qwmzg6wq9ugs7vnxnv73ma5wq0nsa8r"
+        report = discover([instruction_log(request_message(sender=sender))])
+        assert report.expectations_created == 1
+        e = Expectation.objects.get()
+        assert e.trigger_ref == f"0x{SOURCE.hex()}/{sender}#7.0"
+        assert len(e.trigger_ref) > 128
+
     def test_a_reissued_request_is_a_retry_not_a_rival(self):
         # An identical request may be submitted again for another processing
         # round. The FIRST commitment keeps provenance, so the second must not
