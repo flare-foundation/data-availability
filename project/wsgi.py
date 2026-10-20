@@ -14,3 +14,8 @@ from django.core.wsgi import get_wsgi_application
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings.remote")
 
 application = get_wsgi_application()
+
+if os.environ.get("OTEL_ENABLED", "false").lower() == "true":
+    from opentelemetry.instrumentation.wsgi import OpenTelemetryMiddleware
+
+    application = OpenTelemetryMiddleware(application)
