@@ -12,33 +12,46 @@ _APP_DIRS = ("ftso", "fdc", "fsp", "processing", "configuration", "project")
 
 
 class CallerFilter(logging.Filter):
-    """injects timestamp, caller info, and OTel trace context into every record"""
+    """injects caller info into every record"""
 
     def filter(self, record):
-        record.timestamp = record.created
-        record.datetime = datetime.fromtimestamp(record.created, tz=UTC).isoformat()
-
         path = os.path.relpath(record.pathname, _ROOT)
         if path.startswith(_APP_DIRS):
             record.caller = f"{path}:{record.funcName}:{record.lineno}"
         else:
             record.caller = record.name
-
-        span = trace.get_current_span()
-        ctx = span.get_span_context() if span else None
-
-        if ctx and ctx.is_valid:
-            trace_id = trace.format_trace_id(ctx.trace_id)
-            span_id = trace.format_span_id(ctx.span_id)
-            record.trace_context = f"[trace_id={trace_id} span_id={span_id}] "
-        else:
-            record.trace_context = ""
-
         return True
 
 
-class JsonFormatter(BaseJsonFormatter):
+class _ConsoleFields:
+    """Adds console-only fields to a copy of the record.
+
+    The OTLP log handler sees the same record and has these natively.
+    """
+
+    def format(self, record):
+        record = logging.makeLogRecord(record.__dict__)
+        record.timestamp = record.created
+        record.datetime = datetime.fromtimestamp(record.created, tz=UTC).isoformat()
+        ctx = trace.get_current_span().get_span_context()
+        if ctx.is_valid:
+            # separate fields for the JSON format, which emits extra record attributes
+            record.trace_id = trace.format_trace_id(ctx.trace_id)
+            record.span_id = trace.format_span_id(ctx.span_id)
+            record.trace_context = (
+                f"[trace_id={record.trace_id} span_id={record.span_id}] "
+            )
+        else:
+            record.trace_context = ""
+        return super().format(record)
+
+
+class TextFormatter(_ConsoleFields, logging.Formatter):
+    pass
+
+
+class JsonFormatter(_ConsoleFields, BaseJsonFormatter):
     def process_log_record(self, log_data):
-        # Helper used by the non-json logging
+        # only the text format uses it
         log_data.pop("trace_context", None)
         return log_data

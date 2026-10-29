@@ -47,7 +47,11 @@ LOGGING = {
     },
     "formatters": {
         "default": {
-            "format": "[{timestamp}] [{datetime}] {levelname} {trace_context}{caller}: {message}",
+            "()": "project.logging.TextFormatter",
+            "fmt": (
+                "[{timestamp}] [{datetime}] {levelname} {trace_context}{caller}: "
+                "{message}"
+            ),
             "style": "{",
         },
         "json": {
